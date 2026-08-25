@@ -1,0 +1,1 @@
+# shengos-telemetry-daemon
