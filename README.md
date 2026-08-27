@@ -2,4 +2,4 @@
   <img src="assets/logos/logo.png" alt="ShengOS logo" width="180">
 </p>
 
-<h1 align="center">ShengOS Telemetry Daemon</h1>
+<h1 align="center">ShengOS Daemon</h1>
