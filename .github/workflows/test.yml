@@ -2,14 +2,6 @@ name: Test
 on:
   workflow_dispatch:
   push:
-    branches-ignore:
-      - main
-  workflow_call:
-    inputs:
-      branch:
-        required: false
-        type: string
-        default: main
 
 jobs:
   test:
@@ -26,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: 1.26
+          go-version: 1.27
           check-latest: true
           cache: true
 
