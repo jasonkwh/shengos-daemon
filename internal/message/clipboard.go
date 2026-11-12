@@ -5,10 +5,19 @@ import (
 )
 
 const (
-	clipboardVersion     = 1
-	clipboardQoS         = QoSAtLeastOnce
-	clipboardTopicFormat = "shengos/v%d/clipboard"
-	clipboardRetain      = true
+	clipboardVersion = 1
+	clipboardRetain  = true
+)
+
+var (
+	ClipboardSubscription = Subscription{
+		Topic: fmt.Sprintf("shengos/v%d/clipboard",
+			clipboardVersion),
+		QoS:               QoSAtLeastOnce,
+		NoLocal:           true,
+		RetainAsPublished: false,
+		RetainHandling:    RetainHandlingOnSubscribe,
+	}
 )
 
 type ClipboardMessage struct {
@@ -22,11 +31,11 @@ func (msg *ClipboardMessage) Payload() ([]byte, error) {
 }
 
 func (msg *ClipboardMessage) Topic() string {
-	return fmt.Sprintf(clipboardTopicFormat, clipboardVersion)
+	return ClipboardSubscription.Topic
 }
 
 func (msg *ClipboardMessage) QoS() byte {
-	return byte(clipboardQoS)
+	return byte(ClipboardSubscription.QoS)
 }
 
 func (msg *ClipboardMessage) Retain() bool {
