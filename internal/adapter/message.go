@@ -4,4 +4,5 @@ type DaemonMessage interface {
 	Payload() ([]byte, error)
 	Topic() string
 	QoS() byte
+	Retain() bool
 }

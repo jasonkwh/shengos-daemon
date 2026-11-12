@@ -8,6 +8,7 @@ const (
 	clipboardVersion     = 1
 	clipboardQoS         = QoSAtLeastOnce
 	clipboardTopicFormat = "shengos/v%d/clipboard"
+	clipboardRetain      = true
 )
 
 type ClipboardMessage struct {
@@ -16,16 +17,20 @@ type ClipboardMessage struct {
 	Data   []byte
 }
 
-func (m *ClipboardMessage) Payload() ([]byte, error) {
-	return serialize(m)
+func (msg *ClipboardMessage) Payload() ([]byte, error) {
+	return serialize(msg)
 }
 
-func (m *ClipboardMessage) Topic() string {
+func (msg *ClipboardMessage) Topic() string {
 	return fmt.Sprintf(clipboardTopicFormat, clipboardVersion)
 }
 
-func (m *ClipboardMessage) QoS() byte {
+func (msg *ClipboardMessage) QoS() byte {
 	return byte(clipboardQoS)
+}
+
+func (msg *ClipboardMessage) Retain() bool {
+	return clipboardRetain
 }
 
 type ClipboardFormat uint8
