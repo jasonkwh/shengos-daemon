@@ -1,8 +1,0 @@
-syntax = "proto3";
-package daemon;
-
-option go_package = "./proto";
-
-service DaemonService {
-
-}
