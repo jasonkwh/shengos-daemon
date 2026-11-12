@@ -126,8 +126,8 @@ func (b *daemonBus) initMQTTClient(
 		CleanStartOnInitialConnection: true,
 		SessionExpiryInterval:         sessionExpiryInterval,
 		OnConnectionUp: func(cm *autopaho.ConnectionManager, _ *paho.Connack) {
-			if err := b.subscribeTopics(ctx, cm); err != nil {
-				b.zl.Error("failed to subscribe to mqtt broker", zap.Error(err))
+			if serr := b.subscribeTopics(ctx, cm); serr != nil {
+				b.zl.Error("failed to subscribe to mqtt broker", zap.Error(serr))
 			}
 		},
 		OnConnectError: func(err error) {
@@ -189,13 +189,14 @@ func (b *daemonBus) subscribeTopics(
 
 	rejected := make([]string, 0)
 
-	for i, reason := range sub.Reasons {
-		if i >= len(subs) {
+	for i, opt := range subs {
+		if i >= len(sub.Reasons) {
 			continue
 		}
 
+		reason := sub.Reasons[i]
 		if reason >= packets.SubackUnspecifiederror {
-			rejected = append(rejected, fmt.Sprintf("%s: 0x%02x", subs[i].Topic, reason))
+			rejected = append(rejected, fmt.Sprintf("%s: 0x%02x", opt.Topic, reason))
 		}
 	}
 
