@@ -29,19 +29,19 @@ func NewDaemonBus(
 	hdl adapter.DaemonHandler,
 	opts ...daemonBusOption,
 ) (adapter.DaemonBus, error) {
-	b := &daemonBus{
+	dbus := &daemonBus{
 		zl: zap.NewNop(),
 	}
 
 	for _, opt := range opts {
-		opt(b)
+		opt(dbus)
 	}
 
-	if err := b.initMQTTClient(ctx, cfg, hdl); err != nil {
+	if err := dbus.initMQTTClient(ctx, cfg, hdl); err != nil {
 		return nil, err
 	}
 
-	return b, nil
+	return dbus, nil
 }
 
 func (b *daemonBus) Publish(
@@ -80,7 +80,7 @@ func (b *daemonBus) Publish(
 }
 
 func (b *daemonBus) Subscribe(ctx context.Context) error {
-	if err := b.subscribe(ctx, b.mqttCl); err != nil {
+	if err := b.subscribeTopics(ctx, b.mqttCl); err != nil {
 		b.zl.Error("failed to subscribe to mqtt broker", zap.Error(err))
 
 		return err
@@ -126,29 +126,20 @@ func (b *daemonBus) initMQTTClient(
 		CleanStartOnInitialConnection: true,
 		SessionExpiryInterval:         sessionExpiryInterval,
 		OnConnectionUp: func(cm *autopaho.ConnectionManager, _ *paho.Connack) {
-			if err := b.subscribe(ctx, cm); err != nil {
+			if err := b.subscribeTopics(ctx, cm); err != nil {
 				b.zl.Error("failed to subscribe to mqtt broker", zap.Error(err))
 			}
 		},
 		OnConnectError: func(err error) {
 			b.zl.Error("mqtt connect failed", zap.Error(err))
 		},
-		ClientID: id,
+		ClientID:                   id,
+		EnableManualAcknowledgment: true,
 		OnClientError: func(err error) {
 			b.zl.Error("mqtt client error", zap.Error(err))
 		},
 		OnPublishReceived: []func(paho.PublishReceived) (bool, error){
-			func(pr paho.PublishReceived) (bool, error) {
-				if err := hdl.ProcessMessage(ctx, pr.Packet.Topic, pr.Packet.Payload); err != nil {
-					b.zl.Error("handler failed",
-						zap.String("topic", pr.Packet.Topic),
-						zap.Error(err))
-
-					return false, err
-				}
-
-				return true, nil
-			},
+			b.onPublishReceived(ctx, hdl),
 		},
 	}
 
@@ -177,7 +168,7 @@ func (b *daemonBus) initMQTTClient(
 	return nil
 }
 
-func (b *daemonBus) subscribe(
+func (b *daemonBus) subscribeTopics(
 	ctx context.Context,
 	cm *autopaho.ConnectionManager,
 ) error {
@@ -199,6 +190,10 @@ func (b *daemonBus) subscribe(
 	rejected := make([]string, 0)
 
 	for i, reason := range sub.Reasons {
+		if i >= len(subs) {
+			continue
+		}
+
 		if reason >= packets.SubackUnspecifiederror {
 			rejected = append(rejected, fmt.Sprintf("%s: 0x%02x", subs[i].Topic, reason))
 		}
@@ -211,4 +206,29 @@ func (b *daemonBus) subscribe(
 	b.zl.Debug("subscribed", zap.Int("topic_count", len(subs)))
 
 	return nil
+}
+
+func (b *daemonBus) onPublishReceived(
+	ctx context.Context,
+	hdl adapter.DaemonHandler,
+) func(paho.PublishReceived) (bool, error) {
+	return func(pr paho.PublishReceived) (bool, error) {
+		if err := hdl.ProcessMessage(ctx, pr.Packet.Topic, pr.Packet.Payload); err != nil {
+			b.zl.Error("handler failed",
+				zap.String("topic", pr.Packet.Topic),
+				zap.Error(err))
+
+			return true, err
+		}
+
+		if err := pr.Client.Ack(pr.Packet); err != nil {
+			b.zl.Error("failed to ack message",
+				zap.String("topic", pr.Packet.Topic),
+				zap.Error(err))
+
+			return true, err
+		}
+
+		return true, nil
+	}
 }
