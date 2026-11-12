@@ -1,6 +1,9 @@
 package bus
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/jasonkwh/shengos-daemon/internal/message"
 )
@@ -15,4 +18,13 @@ func toPahoSubscribeOptions(
 		RetainAsPublished: subscription.RetainAsPublished,
 		RetainHandling:    byte(subscription.RetainHandling),
 	}
+}
+
+func clientID() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s-%s", clientIDPrefix, hostname), nil
 }

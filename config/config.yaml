@@ -1,1 +1,6 @@
 PProfEnabled: false
+
+MQTTConn:
+  Host: "jasonkwh-bcm2711.tail0c0276.ts.net"
+  Port: "1883"
+  KeepAlive: 30

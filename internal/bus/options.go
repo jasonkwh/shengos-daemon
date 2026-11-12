@@ -1,6 +1,8 @@
 package bus
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+)
 
 type daemonBusOption func(*daemonBus)
 
