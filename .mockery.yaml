@@ -1,0 +1,10 @@
+dir: "{{.SrcPackageName}}"
+pkgname: mock_{{.SrcPackageName}}
+filename: "mock_{{.SrcPackageName}}.go"
+template: testify
+template-data:
+  unroll-variadic: true
+packages:
+  github.com/jasonkwh/shengos-daemon/internal/adapter:
+    interfaces:
+      DaemonBus: {}

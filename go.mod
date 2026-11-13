@@ -4,9 +4,11 @@ go 1.27.3
 
 require (
 	github.com/eclipse/paho.golang v0.23.0
+	github.com/go-openapi/testify/v2 v2.8.1
 	github.com/jasonkwh/envconfig v1.0.2
 	github.com/jasonkwh/perf v1.0.0
 	github.com/spf13/cobra v1.10.2
+	github.com/stretchr/testify v1.12.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
@@ -26,6 +28,7 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
+	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect

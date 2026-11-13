@@ -11,7 +11,10 @@ import (
 	"golang.design/x/clipboard"
 )
 
-var _ adapter.Clipboard = (*clboard)(nil)
+var (
+	_              adapter.Clipboard = (*clboard)(nil)
+	watchClipboard                   = clipboard.Watch
+)
 
 type clboard struct {
 	cfg      config.ClipboardConfig
@@ -52,7 +55,7 @@ func (c *clboard) Watch(
 ) error {
 	c.zl.Debug("watching clipboard message")
 
-	for data := range clipboard.Watch(ctx) {
+	for data := range watchClipboard(ctx) {
 		if data.Sensitive || c.ownWrite(data.Format, data.Bytes) {
 			c.zl.Debug("clipboard data is sensitive or own write, skipping")
 

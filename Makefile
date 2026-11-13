@@ -16,3 +16,6 @@ test-coverage:
 
 serve:
 	go run main.go --config=./config/config.yaml serve
+
+build-mocks:
+	cd mocks/ && rm -rf -- */ && mockery
