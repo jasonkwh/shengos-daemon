@@ -2,6 +2,7 @@ package clipboard
 
 import (
 	"context"
+	"iter"
 	"sync"
 
 	"github.com/jasonkwh/shengos-daemon/config"
@@ -57,38 +58,8 @@ func (c *clboard) Watch(
 ) error {
 	c.zl.Debug("watching clipboard message")
 
-	for data := range c.watchFunc(ctx) {
-		if data.Sensitive || c.ownWrite(data.Format, data.Bytes) {
-			c.zl.Debug("clipboard data is sensitive or own write, skipping")
-
-			continue
-		}
-
-		msgFormat := toMessageClipboardFormat(data.Format)
-
-		if msgFormat == message.ClipboardFormatUnknown {
-			c.zl.Debug("clipboard message format is unknown, skipping")
-
-			continue
-		}
-
-		if msgFormat == message.ClipboardFormatFiles {
-			uriList, err := toSFTPURIList(c.hostname, data.Bytes, c.cfg.SSHUser)
-			if err != nil {
-				c.zl.Debug("failed to convert clipboard message to sftp uri list",
-					zap.Error(err))
-
-				continue
-			}
-
-			data.Bytes = uriList
-		}
-
-		if err := c.bus.Publish(ctx, &message.ClipboardMessage{
-			Origin: c.hostname,
-			Format: msgFormat,
-			Data:   data.Bytes,
-		}); err != nil {
+	for msg := range c.clipboardMessages(ctx) {
+		if err := c.bus.Publish(ctx, &msg); err != nil {
 			c.zl.Error("failed to publish clipboard message",
 				zap.Error(err))
 
@@ -97,7 +68,7 @@ func (c *clboard) Watch(
 
 		c.zl.Debug("clipboard message published",
 			zap.String("origin", c.hostname),
-			zap.String("format", msgFormat.String()))
+			zap.String("format", msg.Format.String()))
 	}
 
 	c.zl.Debug("ended watching clipboard message")
@@ -135,4 +106,46 @@ func (c *clboard) Apply(
 		zap.String("format", msg.Format.String()))
 
 	return nil
+}
+
+func (c *clboard) clipboardMessages(
+	ctx context.Context,
+) iter.Seq[message.ClipboardMessage] {
+	return func(yield func(message.ClipboardMessage) bool) {
+		for data := range c.watchFunc(ctx) {
+			if data.Sensitive || c.ownWrite(data.Format, data.Bytes) {
+				c.zl.Debug("clipboard data is sensitive or own write, skipping")
+
+				continue
+			}
+
+			msgFormat := toMessageClipboardFormat(data.Format)
+
+			if msgFormat == message.ClipboardFormatUnknown {
+				c.zl.Debug("clipboard message format is unknown, skipping")
+
+				continue
+			}
+
+			if msgFormat == message.ClipboardFormatFiles {
+				uriList, err := toSFTPURIList(c.hostname, data.Bytes, c.cfg.SSHUser)
+				if err != nil {
+					c.zl.Debug("failed to convert clipboard message to sftp uri list",
+						zap.Error(err))
+
+					continue
+				}
+
+				data.Bytes = uriList
+			}
+
+			if !yield(message.ClipboardMessage{
+				Origin: c.hostname,
+				Format: msgFormat,
+				Data:   data.Bytes,
+			}) {
+				return
+			}
+		}
+	}
 }
