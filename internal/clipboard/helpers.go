@@ -10,30 +10,32 @@ import (
 	"golang.design/x/clipboard"
 )
 
-func (c *clboard) sftpURIList(
+func (c *clboard) toSFTPURIList(
 	origin string,
 	data []byte,
 ) ([]byte, error) {
 	var body strings.Builder
 
-	for path := range bytes.SplitSeq(data, []byte("\n")) {
-		path = bytes.TrimRight(path, "\r")
-		if len(path) == 0 {
+	for line := range bytes.SplitSeq(data, []byte("\n")) {
+		line = bytes.TrimRight(line, "\r")
+
+		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
 
-		if path[0] != '/' {
-			return nil, errRelativePath(path)
+		u, err := url.Parse(string(line))
+		if err != nil || u.Scheme != "file" || u.Host != "" || len(u.Path) == 0 || u.Path[0] != '/' {
+			continue
 		}
 
-		u := url.URL{
+		sftpURL := url.URL{
 			Scheme: "sftp",
 			User:   url.User(c.cfg.SSHUser),
 			Host:   origin,
-			Path:   string(path),
+			Path:   u.Path,
 		}
 
-		body.WriteString(u.String())
+		body.WriteString(sftpURL.String())
 		body.WriteString("\r\n")
 	}
 

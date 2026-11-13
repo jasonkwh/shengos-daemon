@@ -24,7 +24,3 @@ func errWatchFailed(err error) error {
 func errApplyFailed(err error) error {
 	return fmt.Errorf("%w: %w", ErrApplyFailed, err)
 }
-
-func errRelativePath(path []byte) error {
-	return fmt.Errorf("%w: %s", ErrRelativePath, path)
-}
