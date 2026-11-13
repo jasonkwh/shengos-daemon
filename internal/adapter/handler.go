@@ -2,7 +2,7 @@ package adapter
 
 import "context"
 
-type DaemonHandler interface {
+type DaemonMessageHandler interface {
 	ProcessMessage(
 		ctx context.Context,
 		topic string,

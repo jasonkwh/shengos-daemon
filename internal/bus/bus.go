@@ -26,7 +26,7 @@ type daemonBus struct {
 func NewDaemonBus(
 	ctx context.Context,
 	cfg config.MQTTConnConfig,
-	hdl adapter.DaemonHandler,
+	hdl adapter.DaemonMessageHandler,
 	opts ...daemonBusOption,
 ) (adapter.DaemonBus, error) {
 	dbus := &daemonBus{
@@ -106,7 +106,7 @@ func (b *daemonBus) Close() error {
 func (b *daemonBus) initMQTTClient(
 	ctx context.Context,
 	cfg config.MQTTConnConfig,
-	hdl adapter.DaemonHandler,
+	hdl adapter.DaemonMessageHandler,
 ) error {
 	id, err := clientID()
 	if err != nil {
@@ -211,7 +211,7 @@ func (b *daemonBus) subscribeTopics(
 
 func (b *daemonBus) onPublishReceived(
 	ctx context.Context,
-	hdl adapter.DaemonHandler,
+	hdl adapter.DaemonMessageHandler,
 ) func(paho.PublishReceived) (bool, error) {
 	return func(pr paho.PublishReceived) (bool, error) {
 		if err := hdl.ProcessMessage(ctx, pr.Packet.Topic, pr.Packet.Payload); err != nil {

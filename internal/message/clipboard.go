@@ -10,9 +10,11 @@ const (
 )
 
 var (
+	ClipboardTopic = fmt.Sprintf("shengos/v%d/clipboard",
+		clipboardVersion)
+
 	ClipboardSubscription = Subscription{
-		Topic: fmt.Sprintf("shengos/v%d/clipboard",
-			clipboardVersion),
+		Topic:             ClipboardTopic,
 		QoS:               QoSAtLeastOnce,
 		NoLocal:           true,
 		RetainAsPublished: false,
@@ -31,7 +33,7 @@ func (msg *ClipboardMessage) Payload() ([]byte, error) {
 }
 
 func (msg *ClipboardMessage) Topic() string {
-	return ClipboardSubscription.Topic
+	return ClipboardTopic
 }
 
 func (msg *ClipboardMessage) QoS() byte {
@@ -48,4 +50,18 @@ const (
 	ClipboardFormatUnknown ClipboardFormat = iota
 	ClipboardFormatText
 	ClipboardFormatImage
+	ClipboardFormatFile
 )
+
+func (f ClipboardFormat) String() string {
+	switch f {
+	case ClipboardFormatText:
+		return "text"
+	case ClipboardFormatImage:
+		return "image"
+	case ClipboardFormatFile:
+		return "file"
+	default:
+		return "unknown"
+	}
+}
