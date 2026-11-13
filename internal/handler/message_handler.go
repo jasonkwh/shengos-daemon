@@ -39,27 +39,34 @@ func (h *daemonMessageHandler) ProcessMessage(
 
 	switch topic {
 	case message.ClipboardTopic:
-		var msg message.ClipboardMessage
-
-		if err := msg.Unmarshal(payload); err != nil {
-			h.zl.Error("failed to unmarshal clipboard message",
-				zap.Error(err))
-
-			return errUnmarshalFailed(err)
-		}
-
-		h.zl.Debug("clipboard message",
-			zap.String("origin", msg.Origin),
-			zap.String("format", msg.Format.String()),
-			zap.String("data_len", fmt.Sprintf("%d", len(msg.Data))))
-
-		// TODO: Implement clipboard message processing
-
-		return nil
+		return h.processClipboardMessage(ctx, payload)
 	default:
 		h.zl.Error("unknown topic",
 			zap.String("topic", topic))
 
 		return errUnknownTopic(topic)
 	}
+}
+
+func (h *daemonMessageHandler) processClipboardMessage(
+	ctx context.Context,
+	payload []byte,
+) error {
+	var msg message.ClipboardMessage
+
+	if err := msg.Unmarshal(payload); err != nil {
+		h.zl.Error("failed to unmarshal clipboard message",
+			zap.Error(err))
+
+		return errUnmarshalFailed(err)
+	}
+
+	h.zl.Debug("clipboard message",
+		zap.String("origin", msg.Origin),
+		zap.String("format", msg.Format.String()),
+		zap.String("data_len", fmt.Sprintf("%d", len(msg.Data))))
+
+	// TODO: Implement clipboard message processing
+
+	return nil
 }
