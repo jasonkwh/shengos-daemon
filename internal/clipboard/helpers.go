@@ -23,8 +23,8 @@ func (c *clboard) toSFTPURIList(
 			continue
 		}
 
-		u, err := url.Parse(string(line))
-		if err != nil || u.Scheme != "file" || u.Host != "" || len(u.Path) == 0 || u.Path[0] != '/' {
+		fileURL, err := url.Parse(string(line))
+		if err != nil || fileURL.Scheme != "file" || fileURL.Host != "" || len(fileURL.Path) == 0 || fileURL.Path[0] != '/' {
 			continue
 		}
 
@@ -32,7 +32,7 @@ func (c *clboard) toSFTPURIList(
 			Scheme: "sftp",
 			User:   url.User(c.cfg.SSHUser),
 			Host:   origin,
-			Path:   u.Path,
+			Path:   fileURL.Path,
 		}
 
 		body.WriteString(sftpURL.String())
