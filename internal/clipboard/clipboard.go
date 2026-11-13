@@ -2,6 +2,7 @@ package clipboard
 
 import (
 	"context"
+	"sync"
 
 	"github.com/jasonkwh/shengos-daemon/config"
 	"github.com/jasonkwh/shengos-daemon/internal/adapter"
@@ -17,6 +18,9 @@ type clboard struct {
 	bus      adapter.DaemonBus
 	zl       *zap.Logger
 	hostname string
+
+	written *[32]byte
+	mu      sync.Mutex
 }
 
 func NewClipboard(
@@ -48,7 +52,50 @@ func (c *clboard) Watch(
 ) error {
 	c.zl.Debug("watching clipboard message")
 
-	// TODO: Implement clipboard watching
+	for data := range clipboard.Watch(ctx) {
+		if data.Sensitive || c.ownWrite(data.Format, data.Bytes) {
+			c.zl.Debug("clipboard data is sensitive or own write, skipping")
+
+			continue
+		}
+
+		msgFormat := toMessageClipboardFormat(data.Format)
+
+		if msgFormat == message.ClipboardFormatUnknown {
+			c.zl.Debug("clipboard message format is unknown, skipping")
+
+			continue
+		}
+
+		if msgFormat == message.ClipboardFormatFiles {
+			uriList, err := c.toSFTPURIList(c.hostname, data.Bytes)
+			if err != nil {
+				c.zl.Debug("failed to convert clipboard message to sftp uri list",
+					zap.Error(err))
+
+				continue
+			}
+
+			data.Bytes = uriList
+		}
+
+		if err := c.bus.Publish(ctx, &message.ClipboardMessage{
+			Origin: c.hostname,
+			Format: msgFormat,
+			Data:   data.Bytes,
+		}); err != nil {
+			c.zl.Error("failed to publish clipboard message",
+				zap.Error(err))
+
+			return errWatchFailed(err)
+		}
+
+		c.zl.Debug("clipboard message published",
+			zap.String("origin", c.hostname),
+			zap.String("format", msgFormat.String()))
+	}
+
+	c.zl.Debug("ended watching clipboard message")
 
 	return nil
 }
@@ -69,27 +116,11 @@ func (c *clboard) Apply(
 		return nil
 	}
 
-	var err error
+	if err := c.writeRemembered(ctx,
+		toClipboardFormat(msg.Format), msg.Data); err != nil {
+		c.zl.Error("failed to write clipboard message",
+			zap.Error(err))
 
-	switch msg.Format {
-	case message.ClipboardFormatText:
-		_, err = clipboard.Write(ctx, clipboard.FmtText, msg.Data)
-	case message.ClipboardFormatImage:
-		_, err = clipboard.Write(ctx, clipboard.FmtImage, msg.Data)
-	case message.ClipboardFormatFile:
-		var uriList []byte
-
-		uriList, err = c.sftpURIList(msg.Origin, msg.Data)
-		if err != nil {
-			break
-		}
-
-		_, err = clipboard.Write(ctx, clipboard.FmtFiles, uriList)
-	default:
-		err = errUnknownFormat(msg.Format)
-	}
-
-	if err != nil {
 		return errApplyFailed(err)
 	}
 
