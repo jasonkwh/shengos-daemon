@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	ErrUnknownTopic    = errors.New("unknown topic")
-	ErrUnmarshalFailed = errors.New("failed to unmarshal message")
+	ErrUnknownTopic         = errors.New("unknown topic")
+	ErrUnmarshalFailed      = errors.New("failed to unmarshal message")
+	ErrClipboardApplyFailed = errors.New("failed to apply clipboard message")
 )
 
 func errUnknownTopic(topic string) error {
@@ -16,4 +17,8 @@ func errUnknownTopic(topic string) error {
 
 func errUnmarshalFailed(err error) error {
 	return fmt.Errorf("%w: %w", ErrUnmarshalFailed, err)
+}
+
+func errClipboardApplyFailed(err error) error {
+	return fmt.Errorf("%w: %w", ErrClipboardApplyFailed, err)
 }

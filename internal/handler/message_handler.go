@@ -12,14 +12,17 @@ import (
 var _ adapter.DaemonMessageHandler = (*daemonMessageHandler)(nil)
 
 type daemonMessageHandler struct {
-	zl *zap.Logger
+	clipboard adapter.Clipboard
+	zl        *zap.Logger
 }
 
 func NewDaemonMessageHandler(
+	clipboard adapter.Clipboard,
 	opts ...daemonMessageHandlerOption,
 ) adapter.DaemonMessageHandler {
 	dh := &daemonMessageHandler{
-		zl: zap.NewNop(),
+		clipboard: clipboard,
+		zl:        zap.NewNop(),
 	}
 
 	for _, opt := range opts {
@@ -61,12 +64,19 @@ func (h *daemonMessageHandler) processClipboardMessage(
 		return errUnmarshalFailed(err)
 	}
 
-	h.zl.Debug("clipboard message",
+	if err := h.clipboard.Apply(ctx, msg); err != nil {
+		h.zl.Error("failed to apply clipboard message",
+			zap.String("origin", msg.Origin),
+			zap.String("format", msg.Format.String()),
+			zap.Error(err))
+
+		return errClipboardApplyFailed(err)
+	}
+
+	h.zl.Info("clipboard message applied",
 		zap.String("origin", msg.Origin),
 		zap.String("format", msg.Format.String()),
 		zap.String("data_len", fmt.Sprintf("%d", len(msg.Data))))
-
-	// TODO: Implement clipboard message processing
 
 	return nil
 }
