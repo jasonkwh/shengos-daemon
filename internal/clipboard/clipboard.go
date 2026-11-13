@@ -2,7 +2,6 @@ package clipboard
 
 import (
 	"context"
-	"os"
 
 	"github.com/jasonkwh/shengos-daemon/config"
 	"github.com/jasonkwh/shengos-daemon/internal/adapter"
@@ -14,21 +13,23 @@ import (
 var _ adapter.Clipboard = (*clboard)(nil)
 
 type clboard struct {
-	cfg config.ClipboardConfig
-	bus adapter.DaemonBus
-
-	zl *zap.Logger
+	cfg      config.ClipboardConfig
+	bus      adapter.DaemonBus
+	zl       *zap.Logger
+	hostname string
 }
 
 func NewClipboard(
 	cfg config.ClipboardConfig,
 	bus adapter.DaemonBus,
+	hostname string,
 	opts ...clboardOption,
 ) (adapter.Clipboard, error) {
 	clb := &clboard{
-		cfg: cfg,
-		bus: bus,
-		zl:  zap.NewNop(),
+		cfg:      cfg,
+		bus:      bus,
+		zl:       zap.NewNop(),
+		hostname: hostname,
 	}
 
 	for _, opt := range opts {
@@ -45,7 +46,10 @@ func NewClipboard(
 func (c *clboard) Watch(
 	ctx context.Context,
 ) error {
+	c.zl.Debug("watching clipboard message")
+
 	// TODO: Implement clipboard watching
+
 	return nil
 }
 
@@ -57,18 +61,15 @@ func (c *clboard) Apply(
 		zap.String("origin", msg.Origin),
 		zap.String("format", msg.Format.String()))
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return errApplyFailed(err)
-	}
-
-	if msg.Origin == hostname {
+	if msg.Origin == c.hostname {
 		c.zl.Debug("clipboard message origin is the same as the hostname, skipping",
 			zap.String("origin", msg.Origin),
-			zap.String("hostname", hostname))
+			zap.String("hostname", c.hostname))
 
 		return nil
 	}
+
+	var err error
 
 	switch msg.Format {
 	case message.ClipboardFormatText:

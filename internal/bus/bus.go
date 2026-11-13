@@ -19,18 +19,21 @@ import (
 var _ adapter.DaemonBus = (*daemonBus)(nil)
 
 type daemonBus struct {
-	mqttCl *autopaho.ConnectionManager
-	zl     *zap.Logger
+	mqttCl   *autopaho.ConnectionManager
+	zl       *zap.Logger
+	hostname string
 }
 
 func NewDaemonBus(
 	ctx context.Context,
 	cfg config.MQTTConnConfig,
 	hdl adapter.DaemonMessageHandler,
+	hostname string,
 	opts ...daemonBusOption,
 ) (adapter.DaemonBus, error) {
 	dbus := &daemonBus{
-		zl: zap.NewNop(),
+		zl:       zap.NewNop(),
+		hostname: hostname,
 	}
 
 	for _, opt := range opts {
@@ -108,11 +111,6 @@ func (b *daemonBus) initMQTTClient(
 	cfg config.MQTTConnConfig,
 	hdl adapter.DaemonMessageHandler,
 ) error {
-	id, err := clientID()
-	if err != nil {
-		return errConnectFailed(err)
-	}
-
 	srvURL := net.JoinHostPort(cfg.Host, cfg.Port)
 
 	autoCfg := autopaho.ClientConfig{
@@ -133,7 +131,7 @@ func (b *daemonBus) initMQTTClient(
 		OnConnectError: func(err error) {
 			b.zl.Error("mqtt connect failed", zap.Error(err))
 		},
-		ClientID:                   id,
+		ClientID:                   b.clientID(),
 		EnableManualAcknowledgment: true,
 		OnClientError: func(err error) {
 			b.zl.Error("mqtt client error", zap.Error(err))
@@ -166,6 +164,10 @@ func (b *daemonBus) initMQTTClient(
 	b.mqttCl = cm
 
 	return nil
+}
+
+func (b *daemonBus) clientID() string {
+	return fmt.Sprintf("%s-%s", clientIDPrefix, b.hostname)
 }
 
 func (b *daemonBus) subscribeTopics(
