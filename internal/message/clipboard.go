@@ -54,7 +54,7 @@ const (
 	ClipboardFormatUnknown ClipboardFormat = iota
 	ClipboardFormatText
 	ClipboardFormatImage
-	ClipboardFormatFile
+	ClipboardFormatFiles
 )
 
 func (f ClipboardFormat) String() string {
@@ -63,8 +63,8 @@ func (f ClipboardFormat) String() string {
 		return "text"
 	case ClipboardFormatImage:
 		return "image"
-	case ClipboardFormatFile:
-		return "file"
+	case ClipboardFormatFiles:
+		return "files"
 	default:
 		return "unknown"
 	}
