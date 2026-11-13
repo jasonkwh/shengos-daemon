@@ -37,7 +37,7 @@ func (h *daemonMessageHandler) ProcessMessage(
 	topic string,
 	payload []byte,
 ) error {
-	h.zl.Info("processing message",
+	h.zl.Debug("processing message",
 		zap.String("topic", topic))
 
 	switch topic {
