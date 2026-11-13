@@ -84,13 +84,13 @@ func (c *clboard) ownWrite(format clipboard.Format, data []byte) bool {
 }
 
 func clipboardHash(format clipboard.Format, data []byte) [32]byte {
-	h := sha256.New()
-	h.Write([]byte{byte(format)})
-	h.Write(data)
+	hash := sha256.New()
+	hash.Write([]byte{byte(toMessageClipboardFormat(format))})
+	hash.Write(data)
 
 	var sum [32]byte
 
-	copy(sum[:], h.Sum(nil))
+	copy(sum[:], hash.Sum(nil))
 
 	return sum
 }
