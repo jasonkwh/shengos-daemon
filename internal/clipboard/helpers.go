@@ -10,9 +10,10 @@ import (
 	"golang.design/x/clipboard"
 )
 
-func (c *clboard) toSFTPURIList(
+func toSFTPURIList(
 	origin string,
 	data []byte,
+	sshUser string,
 ) ([]byte, error) {
 	var body strings.Builder
 
@@ -30,7 +31,7 @@ func (c *clboard) toSFTPURIList(
 
 		sftpURL := url.URL{
 			Scheme: "sftp",
-			User:   url.User(c.cfg.SSHUser),
+			User:   url.User(sshUser),
 			Host:   origin,
 			Path:   fileURL.Path,
 		}

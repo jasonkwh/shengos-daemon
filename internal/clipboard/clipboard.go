@@ -68,7 +68,7 @@ func (c *clboard) Watch(
 		}
 
 		if msgFormat == message.ClipboardFormatFiles {
-			uriList, err := c.toSFTPURIList(c.hostname, data.Bytes)
+			uriList, err := toSFTPURIList(c.hostname, data.Bytes, c.cfg.SSHUser)
 			if err != nil {
 				c.zl.Debug("failed to convert clipboard message to sftp uri list",
 					zap.Error(err))
