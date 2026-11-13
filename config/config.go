@@ -3,7 +3,12 @@ package config
 type Config struct {
 	PProfEnabled bool
 
-	MQTTConn MQTTConnConfig
+	Clipboard ClipboardConfig
+	MQTTConn  MQTTConnConfig
+}
+
+type ClipboardConfig struct {
+	SSHUser string
 }
 
 type MQTTConnConfig struct {
