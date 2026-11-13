@@ -144,6 +144,7 @@ func (c *clboard) clipboardMessages(
 				Format: msgFormat,
 				Data:   data.Bytes,
 			}) {
+				//nolint:whitespace
 				return
 			}
 		}
