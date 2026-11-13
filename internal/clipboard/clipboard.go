@@ -15,15 +15,19 @@ var _ adapter.Clipboard = (*clboard)(nil)
 
 type clboard struct {
 	cfg config.ClipboardConfig
-	zl  *zap.Logger
+	bus adapter.DaemonBus
+
+	zl *zap.Logger
 }
 
 func NewClipboard(
 	cfg config.ClipboardConfig,
+	bus adapter.DaemonBus,
 	opts ...clboardOption,
 ) (adapter.Clipboard, error) {
 	clb := &clboard{
 		cfg: cfg,
+		bus: bus,
 		zl:  zap.NewNop(),
 	}
 
