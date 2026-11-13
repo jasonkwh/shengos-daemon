@@ -116,11 +116,12 @@ func (c *clboard) Apply(
 		return nil
 	}
 
-	if err := c.writeRemembered(ctx,
-		toClipboardFormat(msg.Format), msg.Data); err != nil {
-		c.zl.Error("failed to write clipboard message",
-			zap.Error(err))
+	format, err := toClipboardFormat(msg.Format)
+	if err != nil {
+		return errApplyFailed(err)
+	}
 
+	if err := c.writeRemembered(ctx, format, msg.Data); err != nil {
 		return errApplyFailed(err)
 	}
 

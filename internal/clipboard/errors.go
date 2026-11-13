@@ -9,8 +9,8 @@ var (
 	ErrInitFailed    = errors.New("init failed")
 	ErrWatchFailed   = errors.New("watch failed")
 	ErrApplyFailed   = errors.New("apply failed")
-	ErrRelativePath  = errors.New("relative path")
 	ErrEmptyPathList = errors.New("empty path list")
+	ErrUnknownFormat = errors.New("unknown format")
 )
 
 func errInitFailed(err error) error {

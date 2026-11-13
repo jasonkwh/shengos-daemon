@@ -22,15 +22,15 @@ func toMessageClipboardFormat(
 
 func toClipboardFormat(
 	format message.ClipboardFormat,
-) clipboard.Format {
+) (clipboard.Format, error) {
 	switch format {
 	case message.ClipboardFormatText:
-		return clipboard.FmtText
+		return clipboard.FmtText, nil
 	case message.ClipboardFormatImage:
-		return clipboard.FmtImage
+		return clipboard.FmtImage, nil
 	case message.ClipboardFormatFiles:
-		return clipboard.FmtFiles
+		return clipboard.FmtFiles, nil
 	default:
-		return clipboard.FmtText
+		return 0, ErrUnknownFormat
 	}
 }

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jasonkwh/shengos-daemon/internal/adapter"
 	"github.com/jasonkwh/shengos-daemon/internal/message"
@@ -72,11 +71,6 @@ func (h *daemonMessageHandler) processClipboardMessage(
 
 		return err
 	}
-
-	h.zl.Info("clipboard message applied",
-		zap.String("origin", msg.Origin),
-		zap.String("format", msg.Format.String()),
-		zap.String("data_len", fmt.Sprintf("%d", len(msg.Data))))
 
 	return nil
 }
