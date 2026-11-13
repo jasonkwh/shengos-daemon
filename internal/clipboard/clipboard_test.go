@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
+	"github.com/go-openapi/testify/v2/require"
 	"github.com/jasonkwh/shengos-daemon/internal/adapter"
 	clboard "github.com/jasonkwh/shengos-daemon/internal/clipboard"
 	"github.com/jasonkwh/shengos-daemon/internal/message"
@@ -54,6 +55,7 @@ func Test_clipboard_Watch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			as := assert.New(t)
+			rs := require.New(t)
 			ctx := t.Context()
 
 			clb, tm, err := newMockClipboard(t,
@@ -64,8 +66,8 @@ func Test_clipboard_Watch(t *testing.T) {
 					close(changes)
 
 					return changes
-				}))
-			as.NoError(err)
+				}), clboard.WithSkipInit(true))
+			rs.NoError(err)
 
 			tm.mockDaemonBus.EXPECT().
 				Publish(ctx, mock.MatchedBy(func(msg adapter.DaemonMessage) bool {

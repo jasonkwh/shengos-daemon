@@ -22,3 +22,9 @@ func WithWatchFunc(
 		c.watchFunc = watchFunc
 	}
 }
+
+func WithSkipInit(skipInit bool) ClipboardOption {
+	return func(c *clboard) {
+		c.skipInit = skipInit
+	}
+}

@@ -19,6 +19,7 @@ type clboard struct {
 	zl        *zap.Logger
 	hostname  string
 	watchFunc func(ctx context.Context, opts ...clipboard.Option) <-chan clipboard.Data
+	skipInit  bool
 
 	written *[32]byte
 	mu      sync.Mutex
@@ -42,8 +43,10 @@ func New(
 		opt(clb)
 	}
 
-	if err := clipboard.Init(); err != nil {
-		return nil, errInitFailed(err)
+	if !clb.skipInit {
+		if err := clipboard.Init(); err != nil {
+			return nil, errInitFailed(err)
+		}
 	}
 
 	return clb, nil
