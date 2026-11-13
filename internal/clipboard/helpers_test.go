@@ -6,11 +6,9 @@ import (
 	"github.com/go-openapi/testify/v2/assert"
 )
 
-const (
-	sampleSSHUser = "jasonkwh"
-)
-
 func Test_Clipboard_toSFTPURIList(t *testing.T) {
+	sampleSSHUser := "jasonkwh"
+
 	tests := []struct {
 		name    string
 		origin  string
