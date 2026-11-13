@@ -143,8 +143,7 @@ func (c *clboard) clipboardMessages(
 				Origin: c.hostname,
 				Format: msgFormat,
 				Data:   data.Bytes,
-			}) {
-				//nolint:whitespace
+			}) { //nolint:whitespace
 				return
 			}
 		}
