@@ -1,4 +1,4 @@
-package clipboard
+package clipboard_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/jasonkwh/shengos-daemon/internal/adapter"
+	clboard "github.com/jasonkwh/shengos-daemon/internal/clipboard"
 	"github.com/jasonkwh/shengos-daemon/internal/message"
 	"github.com/stretchr/testify/mock"
 	"golang.design/x/clipboard"
@@ -55,20 +56,16 @@ func Test_clipboard_Watch(t *testing.T) {
 			as := assert.New(t)
 			ctx := t.Context()
 
-			clb, tm, err := newMockClipboard(t)
+			clb, tm, err := newMockClipboard(t,
+				clboard.WithWatchFunc(func(context.Context, ...clipboard.Option) <-chan clipboard.Data {
+					changes := make(chan clipboard.Data, 1)
+					changes <- clipboard.Data{Format: tt.format, Bytes: tt.data}
+
+					close(changes)
+
+					return changes
+				}))
 			as.NoError(err)
-
-			previous := watchClipboard
-			t.Cleanup(func() { watchClipboard = previous })
-
-			watchClipboard = func(context.Context, ...clipboard.Option) <-chan clipboard.Data {
-				changes := make(chan clipboard.Data, 1)
-				changes <- clipboard.Data{Format: tt.format, Bytes: tt.data}
-
-				close(changes)
-
-				return changes
-			}
 
 			tm.mockDaemonBus.EXPECT().
 				Publish(ctx, mock.MatchedBy(func(msg adapter.DaemonMessage) bool {

@@ -11,16 +11,14 @@ import (
 	"golang.design/x/clipboard"
 )
 
-var (
-	_              adapter.Clipboard = (*clboard)(nil)
-	watchClipboard                   = clipboard.Watch
-)
+var _ adapter.Clipboard = (*clboard)(nil)
 
 type clboard struct {
-	cfg      config.ClipboardConfig
-	bus      adapter.DaemonBus
-	zl       *zap.Logger
-	hostname string
+	cfg       config.ClipboardConfig
+	bus       adapter.DaemonBus
+	zl        *zap.Logger
+	hostname  string
+	watchFunc func(ctx context.Context, opts ...clipboard.Option) <-chan clipboard.Data
 
 	written *[32]byte
 	mu      sync.Mutex
@@ -30,13 +28,14 @@ func New(
 	cfg config.ClipboardConfig,
 	bus adapter.DaemonBus,
 	hostname string,
-	opts ...clboardOption,
+	opts ...ClipboardOption,
 ) (adapter.Clipboard, error) {
 	clb := &clboard{
-		cfg:      cfg,
-		bus:      bus,
-		zl:       zap.NewNop(),
-		hostname: hostname,
+		cfg:       cfg,
+		bus:       bus,
+		zl:        zap.NewNop(),
+		hostname:  hostname,
+		watchFunc: clipboard.Watch,
 	}
 
 	for _, opt := range opts {
@@ -55,7 +54,7 @@ func (c *clboard) Watch(
 ) error {
 	c.zl.Debug("watching clipboard message")
 
-	for data := range watchClipboard(ctx) {
+	for data := range c.watchFunc(ctx) {
 		if data.Sensitive || c.ownWrite(data.Format, data.Bytes) {
 			c.zl.Debug("clipboard data is sensitive or own write, skipping")
 

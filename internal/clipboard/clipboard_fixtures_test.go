@@ -1,4 +1,4 @@
-package clipboard
+package clipboard_test
 
 import "github.com/jasonkwh/shengos-daemon/config"
 

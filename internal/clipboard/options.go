@@ -1,11 +1,24 @@
 package clipboard
 
-import "go.uber.org/zap"
+import (
+	"context"
 
-type clboardOption func(*clboard)
+	"go.uber.org/zap"
+	"golang.design/x/clipboard"
+)
 
-func WithLogger(zl *zap.Logger) clboardOption {
+type ClipboardOption func(*clboard)
+
+func WithLogger(zl *zap.Logger) ClipboardOption {
 	return func(c *clboard) {
 		c.zl = zl
+	}
+}
+
+func WithWatchFunc(
+	watchFunc func(ctx context.Context, opts ...clipboard.Option) <-chan clipboard.Data,
+) ClipboardOption {
+	return func(c *clboard) {
+		c.watchFunc = watchFunc
 	}
 }
