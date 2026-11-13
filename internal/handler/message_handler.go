@@ -41,8 +41,11 @@ func (h *daemonMessageHandler) ProcessMessage(
 	case message.ClipboardTopic:
 		var msg message.ClipboardMessage
 
-		if err := message.Deserialize(payload, &msg); err != nil {
-			return fmt.Errorf("failed to deserialize clipboard message: %w", err)
+		if err := msg.Unmarshal(payload); err != nil {
+			h.zl.Error("failed to unmarshal clipboard message",
+				zap.Error(err))
+
+			return errUnmarshalFailed(err)
 		}
 
 		h.zl.Debug("clipboard message",
@@ -54,6 +57,9 @@ func (h *daemonMessageHandler) ProcessMessage(
 
 		return nil
 	default:
-		return fmt.Errorf("unknown topic: %s", topic)
+		h.zl.Error("unknown topic",
+			zap.String("topic", topic))
+
+		return errUnknownTopic(topic)
 	}
 }

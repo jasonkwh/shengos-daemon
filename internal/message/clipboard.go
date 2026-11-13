@@ -32,6 +32,10 @@ func (msg *ClipboardMessage) Payload() ([]byte, error) {
 	return serialize(msg)
 }
 
+func (msg *ClipboardMessage) Unmarshal(data []byte) error {
+	return deserialize(data, msg)
+}
+
 func (msg *ClipboardMessage) Topic() string {
 	return ClipboardTopic
 }
