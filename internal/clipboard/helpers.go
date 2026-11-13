@@ -2,8 +2,12 @@ package clipboard
 
 import (
 	"bytes"
+	"context"
+	"crypto/sha256"
 	"net/url"
 	"strings"
+
+	"golang.design/x/clipboard"
 )
 
 func (c *clboard) sftpURIList(
@@ -38,4 +42,53 @@ func (c *clboard) sftpURIList(
 	}
 
 	return []byte(body.String()), nil
+}
+
+func (c *clboard) writeRemembered(
+	ctx context.Context,
+	format clipboard.Format,
+	data []byte,
+) error {
+	if _, err := clipboard.Write(ctx, format, data); err != nil {
+		return err
+	}
+
+	c.remember(format, data)
+
+	return nil
+}
+
+func (c *clboard) remember(format clipboard.Format, data []byte) {
+	hash := clipboardHash(format, data)
+
+	c.mu.Lock()
+	c.written = &hash
+	c.mu.Unlock()
+}
+
+func (c *clboard) ownWrite(format clipboard.Format, data []byte) bool {
+	hash := clipboardHash(format, data)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.written == nil || *c.written != hash {
+		return false
+	}
+
+	c.written = nil
+
+	return true
+}
+
+func clipboardHash(format clipboard.Format, data []byte) [32]byte {
+	h := sha256.New()
+	h.Write([]byte{byte(format)})
+	h.Write(data)
+
+	var sum [32]byte
+
+	copy(sum[:], h.Sum(nil))
+
+	return sum
 }
