@@ -23,7 +23,7 @@ type clboard struct {
 	mu      sync.Mutex
 }
 
-func NewClipboard(
+func New(
 	cfg config.ClipboardConfig,
 	bus adapter.DaemonBus,
 	hostname string,
