@@ -70,7 +70,7 @@ func (h *daemonMessageHandler) processClipboardMessage(
 			zap.String("format", msg.Format.String()),
 			zap.Error(err))
 
-		return errClipboardApplyFailed(err)
+		return err
 	}
 
 	h.zl.Info("clipboard message applied",
