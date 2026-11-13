@@ -6,7 +6,7 @@ import (
 	"github.com/go-openapi/testify/v2/assert"
 )
 
-func Test_Clipboard_toSFTPURIList(t *testing.T) {
+func Test_clipboard_toSFTPURIList(t *testing.T) {
 	sampleSSHUser := "jasonkwh"
 
 	tests := []struct {
