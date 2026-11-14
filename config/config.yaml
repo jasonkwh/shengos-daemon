@@ -2,9 +2,9 @@ LogLevel: 0
 PProfEnabled: false
 
 Clipboard:
-  SSHUser: "jasonkwh"
+  SSHUser: jasonkwh
 
 MQTTConn:
-  Host: "jasonkwh-bcm2711.tail0c0276.ts.net"
-  Port: "1883"
+  Host: jasonkwh-bcm2711
+  Port: 1883
   KeepAlive: 30
