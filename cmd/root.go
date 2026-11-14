@@ -3,13 +3,14 @@ package cmd
 import (
 	"io"
 	"log"
+	"slices"
 
 	"github.com/jasonkwh/envconfig"
-	"github.com/jasonkwh/perf"
 	"github.com/jasonkwh/shengos-daemon/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func Execute() {
@@ -33,26 +34,20 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file")
 }
 
-func initPProfServer(zl *zap.Logger) []io.Closer {
-	var clPool []io.Closer
+func initZapLogger() (*zap.Logger, error) {
+	zlCfg := zap.NewProductionConfig()
 
-	if cfg.PProfEnabled {
-		pprofSrv, perr := perf.NewPProfServer(zl)
-		if perr != nil {
-			zl.Fatal("failed to create pprof server", zap.Error(perr))
-		}
+	// set the internal logger to INFO because we need all internal logs
+	zlCfg.Level.SetLevel(zapcore.Level(cfg.LogLevel))
 
-		clPool = append(clPool, pprofSrv)
-	}
-
-	return clPool
+	return zlCfg.Build()
 }
 
 func gracefulClose(services []io.Closer) error {
 	var errs error
 
-	for i := len(services) - 1; i >= 0; i-- {
-		if err := services[i].Close(); err != nil {
+	for _, svc := range slices.Backward(services) {
+		if err := svc.Close(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
