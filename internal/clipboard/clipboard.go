@@ -19,7 +19,8 @@ type clboard struct {
 	bus       adapter.DaemonBus
 	zl        *zap.Logger
 	hostname  string
-	watchFunc func(ctx context.Context, opts ...clipboard.Option) <-chan clipboard.Data
+	watchFunc clipboardWatchFunc
+	writeFunc clipboardWriteFunc
 	skipInit  bool
 
 	written *[32]byte
@@ -38,6 +39,7 @@ func New(
 		zl:        zap.NewNop(),
 		hostname:  hostname,
 		watchFunc: clipboard.Watch,
+		writeFunc: clipboard.Write,
 	}
 
 	for _, opt := range opts {

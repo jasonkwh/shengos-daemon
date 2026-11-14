@@ -52,7 +52,7 @@ func (c *clboard) writeRemembered(
 	format clipboard.Format,
 	data []byte,
 ) error {
-	if _, err := clipboard.Write(ctx, format, data); err != nil {
+	if _, err := c.writeFunc(ctx, format, data); err != nil {
 		return err
 	}
 

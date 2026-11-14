@@ -23,6 +23,12 @@ func WithWatchFunc(
 	}
 }
 
+func WithWriteFunc(writeFunc clipboardWriteFunc) ClipboardOption {
+	return func(c *clboard) {
+		c.writeFunc = writeFunc
+	}
+}
+
 func WithSkipInit(skipInit bool) ClipboardOption {
 	return func(c *clboard) {
 		c.skipInit = skipInit

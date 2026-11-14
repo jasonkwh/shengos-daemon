@@ -3,6 +3,7 @@ package clipboard_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
@@ -80,6 +81,116 @@ func Test_clipboard_Watch(t *testing.T) {
 				})).Return(nil)
 
 			as.NoError(clb.Watch(ctx))
+		})
+	}
+}
+
+func Test_clipboard_Apply(t *testing.T) {
+	testOrigin := fmt.Sprintf("%s-1", sampleHostname)
+
+	tests := []struct {
+		name       string
+		msg        message.ClipboardMessage
+		wantErr    error
+		wantFormat clipboard.Format
+		wantWrite  bool
+	}{
+		{
+			name: "skipping own message",
+			msg: message.ClipboardMessage{
+				Origin: sampleHostname,
+				Format: message.ClipboardFormatText,
+				Data:   []byte("hello"),
+			},
+		},
+		{
+			name: "unknown clipboard format 1",
+			msg: message.ClipboardMessage{
+				Origin: testOrigin,
+				Format: message.ClipboardFormatUnknown,
+				Data:   []byte("hello"),
+			},
+			wantErr: clboard.ErrUnknownFormat,
+		},
+		{
+			name: "unknown clipboard format 2",
+			msg: message.ClipboardMessage{
+				Origin: testOrigin,
+				Format: message.ClipboardFormatUnknown,
+				Data:   []byte("hello"),
+			},
+			wantErr: clboard.ErrApplyFailed,
+		},
+		{
+			name: "text",
+			msg: message.ClipboardMessage{
+				Origin: testOrigin,
+				Format: message.ClipboardFormatText,
+				Data:   []byte("hello"),
+			},
+			wantFormat: clipboard.FmtText,
+			wantWrite:  true,
+		},
+		{
+			name: "image",
+			msg: message.ClipboardMessage{
+				Origin: testOrigin,
+				Format: message.ClipboardFormatImage,
+				Data:   []byte("image.png"),
+			},
+			wantFormat: clipboard.FmtImage,
+			wantWrite:  true,
+		},
+		{
+			name: "files",
+			msg: message.ClipboardMessage{
+				Origin: testOrigin,
+				Format: message.ClipboardFormatFiles,
+				Data:   []byte("file:///home/jasonkwh/test.txt"),
+			},
+			wantFormat: clipboard.FmtFiles,
+			wantWrite:  true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			as := assert.New(t)
+			rs := require.New(t)
+			ctx := t.Context()
+
+			var (
+				gotFormat clipboard.Format
+				gotData   []byte
+				wrote     bool
+			)
+
+			clb, _, err := newMockClipboard(t,
+				clboard.WithWriteFunc(func(
+					_ context.Context,
+					format clipboard.Format,
+					data []byte,
+					_ ...clipboard.Option,
+				) (<-chan struct{}, error) {
+					wrote = true
+					gotFormat = format
+					gotData = data
+
+					return nil, nil
+				}),
+				clboard.WithSkipInit(true),
+			)
+			rs.NoError(err)
+
+			err = clb.Apply(ctx, tt.msg)
+			as.ErrorIs(err, tt.wantErr)
+			as.Equal(tt.wantWrite, wrote)
+
+			if !tt.wantWrite {
+				return
+			}
+
+			as.Equal(tt.wantFormat, gotFormat)
+			as.Equal(tt.msg.Data, gotData)
 		})
 	}
 }
