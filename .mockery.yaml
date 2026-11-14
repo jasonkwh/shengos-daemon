@@ -8,3 +8,4 @@ packages:
   github.com/jasonkwh/shengos-daemon/internal/adapter:
     interfaces:
       DaemonBus: {}
+      Clipboard: {}
