@@ -52,11 +52,13 @@ func (c *clboard) writeRemembered(
 	format clipboard.Format,
 	data []byte,
 ) error {
+	c.remember(format, data)
+
 	if _, err := c.writeFunc(ctx, format, data); err != nil {
+		c.forget(format, data)
+
 		return err
 	}
-
-	c.remember(format, data)
 
 	return nil
 }
@@ -67,6 +69,17 @@ func (c *clboard) remember(format clipboard.Format, data []byte) {
 	c.mu.Lock()
 	c.written = &hash
 	c.mu.Unlock()
+}
+
+func (c *clboard) forget(format clipboard.Format, data []byte) {
+	hash := clipboardHash(format, data)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.written != nil && *c.written == hash {
+		c.written = nil
+	}
 }
 
 func (c *clboard) ownWrite(format clipboard.Format, data []byte) bool {

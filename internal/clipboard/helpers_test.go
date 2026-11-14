@@ -1,10 +1,43 @@
 package clipboard
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
+	"golang.design/x/clipboard"
 )
+
+func Test_clipboard_writeRemembered(t *testing.T) {
+	format := clipboard.FmtText
+	data := []byte("hello")
+
+	t.Run("stores the hash before write", func(t *testing.T) {
+		as := assert.New(t)
+		c := &clboard{}
+		c.writeFunc = func(context.Context, clipboard.Format, []byte, ...clipboard.Option) (<-chan struct{}, error) {
+			as.True(c.ownWrite(format, data))
+
+			return nil, nil
+		}
+
+		as.NoError(c.writeRemembered(t.Context(), format, data))
+		as.False(c.ownWrite(format, data))
+	})
+
+	t.Run("clears the hash when write fails", func(t *testing.T) {
+		as := assert.New(t)
+		c := &clboard{
+			writeFunc: func(context.Context, clipboard.Format, []byte, ...clipboard.Option) (<-chan struct{}, error) {
+				return nil, errors.New("write failed")
+			},
+		}
+
+		as.Error(c.writeRemembered(t.Context(), format, data))
+		as.False(c.ownWrite(format, data))
+	})
+}
 
 func Test_clipboard_toSFTPURIList(t *testing.T) {
 	sampleSSHUser := "jasonkwh"
