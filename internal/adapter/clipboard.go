@@ -9,6 +9,10 @@ import (
 type Clipboard interface {
 	Watch(
 		ctx context.Context,
+		publishFunc func(
+			ctx context.Context,
+			message DaemonMessage,
+		) error,
 	) error
 
 	Apply(

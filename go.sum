@@ -17,8 +17,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/jasonkwh/envconfig v1.0.3 h1:irAYFCnGbMCEq3zcTwD8GOjLyLN/ey3M2H1IZUgNLdc=
-github.com/jasonkwh/envconfig v1.0.3/go.mod h1:H5b+V1ldKiYwSSjRXRaEMJaIOZxy6hWYrfsGg7YTOVA=
+github.com/jasonkwh/envconfig v1.0.4 h1:1SfklLUOiFtt3WtTqYABTbV6FHfqMFHDCH/qRGVLt6A=
+github.com/jasonkwh/envconfig v1.0.4/go.mod h1:H5b+V1ldKiYwSSjRXRaEMJaIOZxy6hWYrfsGg7YTOVA=
 github.com/jasonkwh/perf v1.0.0 h1:ia6ENeikqVR3iv6Z/4xq+stXbsXEGPSAhQKFwPLXzaI=
 github.com/jasonkwh/perf v1.0.0/go.mod h1:QDJu5Qb1QuoGB3YeSzekXgppjxhhOTmxSrHI+5kHu3Y=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=

@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	github.com/eclipse/paho.golang v0.23.0
 	github.com/go-openapi/testify/v2 v2.8.1
-	github.com/jasonkwh/envconfig v1.0.3
+	github.com/jasonkwh/envconfig v1.0.4
 	github.com/jasonkwh/perf v1.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1

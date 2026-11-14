@@ -1,7 +1,7 @@
 package config
 
 type Config struct {
-	LogLevel     int
+	LogLevel     int8
 	PProfEnabled bool
 
 	Clipboard ClipboardConfig

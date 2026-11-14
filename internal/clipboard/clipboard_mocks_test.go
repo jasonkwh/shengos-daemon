@@ -22,7 +22,6 @@ func newMockClipboard(
 
 	clb, err := clipboard.New(
 		sampleClipboardConfig,
-		tm.mockDaemonBus,
 		sampleHostname,
 		opts...)
 

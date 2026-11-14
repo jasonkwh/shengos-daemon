@@ -16,7 +16,6 @@ var _ adapter.Clipboard = (*clboard)(nil)
 
 type clboard struct {
 	cfg       config.ClipboardConfig
-	bus       adapter.DaemonBus
 	zl        *zap.Logger
 	hostname  string
 	watchFunc clipboardWatchFunc
@@ -29,13 +28,11 @@ type clboard struct {
 
 func New(
 	cfg config.ClipboardConfig,
-	bus adapter.DaemonBus,
 	hostname string,
 	opts ...ClipboardOption,
 ) (adapter.Clipboard, error) {
 	clb := &clboard{
 		cfg:       cfg,
-		bus:       bus,
 		zl:        zap.NewNop(),
 		hostname:  hostname,
 		watchFunc: clipboard.Watch,
@@ -57,11 +54,15 @@ func New(
 
 func (c *clboard) Watch(
 	ctx context.Context,
+	publishFunc func(
+		ctx context.Context,
+		message adapter.DaemonMessage,
+	) error,
 ) error {
 	c.zl.Debug("watching clipboard message")
 
 	for msg := range c.clipboardMessages(ctx) {
-		if err := c.bus.Publish(ctx, &msg); err != nil {
+		if err := publishFunc(ctx, &msg); err != nil {
 			c.zl.Error("failed to publish clipboard message",
 				zap.Error(err))
 

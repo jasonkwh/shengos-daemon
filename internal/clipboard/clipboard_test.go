@@ -80,7 +80,7 @@ func Test_clipboard_Watch(t *testing.T) {
 						bytes.Equal(got.Data, tt.want.Data)
 				})).Return(nil)
 
-			as.NoError(clb.Watch(ctx))
+			as.NoError(clb.Watch(ctx, tm.mockDaemonBus.Publish))
 		})
 	}
 }

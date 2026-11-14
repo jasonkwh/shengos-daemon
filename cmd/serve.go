@@ -9,6 +9,9 @@ import (
 	"syscall"
 
 	"github.com/jasonkwh/perf"
+	"github.com/jasonkwh/shengos-daemon/internal/bus"
+	"github.com/jasonkwh/shengos-daemon/internal/clipboard"
+	"github.com/jasonkwh/shengos-daemon/internal/handler"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -52,7 +55,36 @@ func serve(cmd *cobra.Command, args []string) {
 		clPool = append(clPool, pprofSrv)
 	}
 
-	// TODO: add other initializations here
+	hostname, err := os.Hostname()
+	if err != nil {
+		zl.Fatal("failed to get hostname", zap.Error(err))
+	}
+
+	clb, err := clipboard.New(
+		cfg.Clipboard,
+		hostname,
+		clipboard.WithLogger(zl))
+	if err != nil {
+		zl.Fatal("failed to create clipboard", zap.Error(err))
+	}
+
+	dbus, err := bus.NewDaemonBus(ctx,
+		cfg.MQTTConn,
+		handler.NewDaemonMessageHandler(clb,
+			handler.WithMessageLogger(zl)),
+		hostname,
+		bus.WithLogger(zl))
+	if err != nil {
+		zl.Fatal("failed to create daemon bus", zap.Error(err))
+	}
+
+	clPool = append(clPool, dbus)
+
+	go func() {
+		if cerr := clb.Watch(ctx, dbus.Publish); cerr != nil {
+			zl.Fatal("failed to watch clipboard", zap.Error(cerr))
+		}
+	}()
 
 	zl.Info("daemon started")
 
