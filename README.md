@@ -31,15 +31,10 @@ to the fleet broker; peers apply what they receive. The broker is Eclipse
 Mosquitto on the fleet hub (`jasonkwh-bcm2711`, `tailscale0:1883`), declared
 in [my-nixos-configurations](https://github.com/jasonkwh/my-nixos-configurations).
 
-- **Clipboard** — text, images, and file lists follow the host you are on.
-  A copy on one machine lands on the others.
-- **Local changes** — a host publishes clipboard changes made here. It
-  skips entries the clipboard marks sensitive, messages whose origin is
-  this hostname, and the write it just applied.
-- **Files stay put** — a file list is rewritten from local `file://` paths
-  to `sftp://<user>@<hostname>/<path>`. A peer opens the file over SSH.
-- **One topic** — MessagePack on `shengos/v1/clipboard`, QoS 1, retained.
-  The client id is `shengos-<hostname>`.
+- **Clipboard** — copy and paste across desktop machines. X11 and Wayland
+  only. Text, images, and file lists follow the host you are on. Sensitive
+  copies stay on the machine that made them, and a file list points peers
+  at the files over SSH.
 
 ## Quick start
 
@@ -70,14 +65,13 @@ MQTTConn:
 The process logs `daemon started` after the MQTT session is up and the
 clipboard watch is running. `SIGINT` or `SIGTERM` disconnects from the broker.
 
-Requires Go 1.27.
-
 ## Clipboard
 
-`internal/clipboard` watches the session clipboard
+`internal/clipboard` watches the X11 or Wayland session clipboard
 ([`golang.design/x/clipboard`](https://github.com/golang-design/clipboard))
 and publishes a message: origin hostname, format (`text`, `image`, or
-`files`), and the bytes. `internal/bus` connects with
+`files`), and the bytes. Headless hosts have no clipboard session, so this
+feature stays on desktop machines. `internal/bus` connects with
 [paho.golang](https://github.com/eclipse/paho.golang) (`autopaho`) and
 resubscribes whenever the session comes up. `internal/handler` decodes the
 payload and writes it to the local clipboard. The broker message is
