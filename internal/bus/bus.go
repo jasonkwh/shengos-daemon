@@ -187,9 +187,7 @@ func (b *daemonBus) subscribeTopics(
 ) error {
 	b.zl.Debug("subscribing to mqtt broker")
 
-	subs := []paho.SubscribeOptions{
-		toPahoSubscribeOptions(message.ClipboardSubscription),
-	}
+	subs := ToPahoSubscribeOptions(message.ClipboardSubscription)
 
 	sub, err := b.mqttCl.Subscribe(ctx, &paho.Subscribe{Subscriptions: subs})
 	if err != nil {
@@ -202,12 +200,12 @@ func (b *daemonBus) subscribeTopics(
 
 	rejected := make([]string, 0)
 
-	for i, opt := range subs {
-		if i >= len(sub.Reasons) {
+	for index, opt := range subs {
+		if index >= len(sub.Reasons) {
 			continue
 		}
 
-		reason := sub.Reasons[i]
+		reason := sub.Reasons[index]
 		if reason >= packets.SubackUnspecifiederror {
 			rejected = append(rejected, fmt.Sprintf("%s: 0x%02x", opt.Topic, reason))
 		}

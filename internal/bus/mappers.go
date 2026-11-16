@@ -5,14 +5,26 @@ import (
 	"github.com/jasonkwh/shengos-daemon/internal/message"
 )
 
-func toPahoSubscribeOptions(
-	subscription message.Subscription,
+func toPahoSubscribeOption(
+	sub message.Subscription,
 ) paho.SubscribeOptions {
 	return paho.SubscribeOptions{
-		Topic:             subscription.Topic,
-		QoS:               byte(subscription.QoS),
-		NoLocal:           subscription.NoLocal,
-		RetainAsPublished: subscription.RetainAsPublished,
-		RetainHandling:    byte(subscription.RetainHandling),
+		Topic:             sub.Topic,
+		QoS:               byte(sub.QoS),
+		NoLocal:           sub.NoLocal,
+		RetainAsPublished: sub.RetainAsPublished,
+		RetainHandling:    byte(sub.RetainHandling),
 	}
+}
+
+func ToPahoSubscribeOptions(
+	subs ...message.Subscription,
+) []paho.SubscribeOptions {
+	opts := make([]paho.SubscribeOptions, len(subs))
+
+	for index, sub := range subs {
+		opts[index] = toPahoSubscribeOption(sub)
+	}
+
+	return opts
 }

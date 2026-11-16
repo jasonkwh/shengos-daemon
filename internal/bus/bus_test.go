@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/go-openapi/testify/v2/assert"
 	"github.com/go-openapi/testify/v2/require"
@@ -69,6 +70,73 @@ func Test_daemonBus_Publish(t *testing.T) {
 			if tt.publishErr != nil {
 				as.ErrorIs(err, bus.ErrPublishFailed)
 				as.ErrorIs(err, tt.publishErr)
+				return
+			}
+
+			as.NoError(err)
+		})
+	}
+}
+
+func Test_daemonBus_Subscribe(t *testing.T) {
+	tests := []struct {
+		name         string
+		reasons      []byte
+		subscribeErr error
+		wantErr      error
+		wantDetail   string
+	}{
+		{
+			name:    "success",
+			reasons: []byte{packets.SubackGrantedQoS1},
+		},
+		{
+			name:         "subscribe error",
+			subscribeErr: errors.New("subscribe error"),
+			wantErr:      bus.ErrSubscribeFailed,
+		},
+		{
+			name:       "reason count mismatch",
+			wantErr:    bus.ErrSubscribeRejected,
+			wantDetail: "0 reasons for 1 subscriptions",
+		},
+		{
+			name:       "subscription rejected",
+			reasons:    []byte{packets.SubackNotauthorized},
+			wantErr:    bus.ErrSubscribeRejected,
+			wantDetail: message.ClipboardTopic + ": 0x87",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			as := assert.New(t)
+			rs := require.New(t)
+			ctx := t.Context()
+
+			dbus, tm, err := newMockDaemonBus(t, ctx)
+			rs.NoError(err)
+
+			var suback *paho.Suback
+			if tt.subscribeErr == nil {
+				suback = &paho.Suback{Reasons: tt.reasons}
+			}
+
+			tm.mockMQTTClient.EXPECT().Subscribe(ctx, &paho.Subscribe{
+				Subscriptions: bus.ToPahoSubscribeOptions(
+					message.ClipboardSubscription,
+				),
+			}).Return(suback, tt.subscribeErr)
+
+			err = dbus.Subscribe(ctx)
+			if tt.subscribeErr != nil {
+				as.ErrorIs(err, bus.ErrSubscribeFailed)
+				as.ErrorIs(err, tt.subscribeErr)
+				return
+			}
+
+			if tt.wantErr != nil {
+				as.ErrorIs(err, tt.wantErr)
+				as.ErrorContains(err, tt.wantDetail)
 				return
 			}
 
