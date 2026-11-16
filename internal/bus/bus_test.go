@@ -25,6 +25,8 @@ var sampleMQTTConnConfig = config.MQTTConnConfig{
 const sampleHostname = "jasonkwh-test-rig"
 
 func Test_daemonBus_Publish(t *testing.T) {
+	subs := []message.Subscription{message.ClipboardSubscription}
+
 	sampleMessage := &message.ClipboardMessage{
 		Origin: sampleHostname,
 		Format: message.ClipboardFormatText,
@@ -54,7 +56,7 @@ func Test_daemonBus_Publish(t *testing.T) {
 			rs := require.New(t)
 			ctx := t.Context()
 
-			dbus, tm, err := newMockDaemonBus(t, ctx)
+			dbus, tm, err := newMockDaemonBus(t, ctx, subs)
 			rs.NoError(err)
 
 			tm.mockMQTTClient.EXPECT().Publish(ctx, &paho.Publish{
@@ -83,26 +85,34 @@ func Test_daemonBus_Subscribe(t *testing.T) {
 		subscribeErr error
 		wantErr      error
 		wantDetail   string
+		subs         []message.Subscription
 	}{
 		{
 			name:    "success",
 			reasons: []byte{packets.SubackGrantedQoS1},
+			subs:    []message.Subscription{message.ClipboardSubscription},
 		},
 		{
 			name:         "subscribe error",
 			subscribeErr: errors.New("subscribe error"),
 			wantErr:      bus.ErrSubscribeFailed,
+			subs:         []message.Subscription{message.ClipboardSubscription},
 		},
 		{
 			name:       "reason count mismatch",
 			wantErr:    bus.ErrSubscribeRejected,
 			wantDetail: "0 reasons for 1 subscriptions",
+			subs:       []message.Subscription{message.ClipboardSubscription},
 		},
 		{
 			name:       "subscription rejected",
 			reasons:    []byte{packets.SubackNotauthorized},
 			wantErr:    bus.ErrSubscribeRejected,
 			wantDetail: message.ClipboardTopic + ": 0x87",
+			subs:       []message.Subscription{message.ClipboardSubscription},
+		},
+		{
+			name: "no subscriptions",
 		},
 	}
 	for _, tt := range tests {
@@ -111,7 +121,7 @@ func Test_daemonBus_Subscribe(t *testing.T) {
 			rs := require.New(t)
 			ctx := t.Context()
 
-			dbus, tm, err := newMockDaemonBus(t, ctx)
+			dbus, tm, err := newMockDaemonBus(t, ctx, tt.subs)
 			rs.NoError(err)
 
 			var suback *paho.Suback
@@ -119,11 +129,11 @@ func Test_daemonBus_Subscribe(t *testing.T) {
 				suback = &paho.Suback{Reasons: tt.reasons}
 			}
 
-			tm.mockMQTTClient.EXPECT().Subscribe(ctx, &paho.Subscribe{
-				Subscriptions: bus.ToPahoSubscribeOptions(
-					message.ClipboardSubscription,
-				),
-			}).Return(suback, tt.subscribeErr)
+			if len(tt.subs) > 0 {
+				tm.mockMQTTClient.EXPECT().Subscribe(ctx, &paho.Subscribe{
+					Subscriptions: bus.ToPahoSubscribeOptions(tt.subs),
+				}).Return(suback, tt.subscribeErr)
+			}
 
 			err = dbus.Subscribe(ctx)
 			if tt.subscribeErr != nil {
@@ -151,6 +161,7 @@ type testMocks struct {
 func newMockDaemonBus(
 	t *testing.T,
 	ctx context.Context,
+	subs []message.Subscription,
 ) (adapter.DaemonBus, *testMocks, error) {
 	tm := &testMocks{
 		mockMQTTClient:     mock_adapter.NewMockMQTTClient(t),
@@ -162,6 +173,7 @@ func newMockDaemonBus(
 		sampleMQTTConnConfig,
 		tm.mockMessageHandler,
 		sampleHostname,
+		subs,
 		bus.WithMQTTClient(tm.mockMQTTClient))
 
 	return dbus, tm, err

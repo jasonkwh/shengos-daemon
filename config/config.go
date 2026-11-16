@@ -9,6 +9,7 @@ type Config struct {
 }
 
 type ClipboardConfig struct {
+	Enabled bool
 	SSHUser string
 }
 

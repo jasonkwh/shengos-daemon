@@ -54,6 +54,14 @@ func (h *daemonMessageHandler) processClipboardMessage(
 	ctx context.Context,
 	payload []byte,
 ) error {
+	if h.clipboard == nil {
+		h.zl.Debug("clipboard is not enabled, skipping")
+
+		return nil
+	}
+
+	h.zl.Debug("processing clipboard message")
+
 	var msg message.ClipboardMessage
 
 	if err := msg.Unmarshal(payload); err != nil {

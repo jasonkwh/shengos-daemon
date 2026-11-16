@@ -18,7 +18,7 @@ func toPahoSubscribeOption(
 }
 
 func ToPahoSubscribeOptions(
-	subs ...message.Subscription,
+	subs []message.Subscription,
 ) []paho.SubscribeOptions {
 	opts := make([]paho.SubscribeOptions, len(subs))
 

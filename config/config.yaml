@@ -2,6 +2,7 @@ LogLevel: 0
 PProfEnabled: false
 
 Clipboard:
+  Enabled: true
   SSHUser: jasonkwh
 
 MQTTConn:

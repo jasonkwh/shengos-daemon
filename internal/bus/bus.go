@@ -23,6 +23,7 @@ type daemonBus struct {
 	publishAcker adapter.MQTTPublishAcker
 	zl           *zap.Logger
 	hostname     string
+	subOpts      []paho.SubscribeOptions
 }
 
 func NewDaemonBus(
@@ -30,11 +31,13 @@ func NewDaemonBus(
 	cfg config.MQTTConnConfig,
 	hdl adapter.DaemonMessageHandler,
 	hostname string,
+	subs []message.Subscription,
 	opts ...daemonBusOption,
 ) (adapter.DaemonBus, error) {
 	dbus := &daemonBus{
 		zl:       zap.NewNop(),
 		hostname: hostname,
+		subOpts:  ToPahoSubscribeOptions(subs),
 	}
 
 	for _, opt := range opts {
@@ -185,22 +188,27 @@ func (b *daemonBus) clientID() string {
 func (b *daemonBus) subscribeTopics(
 	ctx context.Context,
 ) error {
+	if len(b.subOpts) == 0 {
+		b.zl.Debug("no subscriptions, skipping")
+
+		return nil
+	}
+
 	b.zl.Debug("subscribing to mqtt broker")
 
-	subs := ToPahoSubscribeOptions(message.ClipboardSubscription)
-
-	sub, err := b.mqttCl.Subscribe(ctx, &paho.Subscribe{Subscriptions: subs})
+	sub, err := b.mqttCl.Subscribe(ctx, &paho.Subscribe{Subscriptions: b.subOpts})
 	if err != nil {
 		return errSubscribeFailed(err)
 	}
 
-	if len(sub.Reasons) != len(subs) {
-		return errSubscribeRejected(fmt.Sprintf("%d reasons for %d subscriptions", len(sub.Reasons), len(subs)))
+	if len(sub.Reasons) != len(b.subOpts) {
+		return errSubscribeRejected(fmt.Sprintf("%d reasons for %d subscriptions",
+			len(sub.Reasons), len(b.subOpts)))
 	}
 
 	rejected := make([]string, 0)
 
-	for index, opt := range subs {
+	for index, opt := range b.subOpts {
 		if index >= len(sub.Reasons) {
 			continue
 		}
@@ -215,7 +223,7 @@ func (b *daemonBus) subscribeTopics(
 		return errSubscribeRejected(strings.Join(rejected, ", "))
 	}
 
-	b.zl.Debug("subscribed", zap.Int("topic_count", len(subs)))
+	b.zl.Debug("subscribed", zap.Int("topic_count", len(b.subOpts)))
 
 	return nil
 }

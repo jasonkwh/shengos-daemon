@@ -8,45 +8,65 @@ import (
 	"github.com/jasonkwh/shengos-daemon/internal/adapter"
 	"github.com/jasonkwh/shengos-daemon/internal/handler"
 	"github.com/jasonkwh/shengos-daemon/internal/message"
+	mock_adapter "github.com/jasonkwh/shengos-daemon/mocks/adapter"
 )
 
 func Test_daemonMessageHandler_ProcessMessage(t *testing.T) {
 	tests := []struct {
-		name    string
-		topic   string
-		payload []byte
-		want    *message.ClipboardMessage
-		wantErr error
+		name             string
+		topic            string
+		payload          []byte
+		enabledClipboard bool
+		want             *message.ClipboardMessage
+		wantErr          error
 	}{
 		{
-			name:    "success",
+			name:             "success",
+			topic:            message.ClipboardTopic,
+			payload:          messagePayload(t, &sampleClipboardMessage),
+			enabledClipboard: true,
+			want:             &sampleClipboardMessage,
+		},
+		{
+			name:             "unknown topic",
+			topic:            "shengos/v1/unknown",
+			payload:          []byte{},
+			enabledClipboard: true,
+			wantErr:          handler.ErrUnknownTopic,
+		},
+		{
+			name:             "failed to unmarshal message",
+			topic:            message.ClipboardTopic,
+			payload:          []byte("invalid"),
+			enabledClipboard: true,
+			wantErr:          handler.ErrUnmarshalFailed,
+		},
+		{
+			name:    "clipboard is not enabled",
 			topic:   message.ClipboardTopic,
 			payload: messagePayload(t, &sampleClipboardMessage),
-			want:    &sampleClipboardMessage,
-		},
-		{
-			name:    "unknown topic",
-			topic:   "shengos/v1/unknown",
-			payload: []byte{},
-			wantErr: handler.ErrUnknownTopic,
-		},
-		{
-			name:    "failed to unmarshal message",
-			topic:   message.ClipboardTopic,
-			payload: []byte("invalid"),
-			wantErr: handler.ErrUnmarshalFailed,
+			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			as := assert.New(t)
 			ctx := t.Context()
-			hdl, tm := newMockMessageHandler(t)
 
-			if tt.want != nil {
-				tm.mockClipboard.EXPECT().Apply(ctx,
-					*tt.want).Return(nil)
+			var clb adapter.Clipboard
+
+			if tt.enabledClipboard {
+				mockClipboard := mock_adapter.NewMockClipboard(t)
+				clb = mockClipboard
+
+				if tt.want != nil {
+					mockClipboard.EXPECT().
+						Apply(ctx, *tt.want).
+						Return(nil)
+				}
 			}
+
+			hdl := handler.NewDaemonMessageHandler(clb)
 
 			err := hdl.ProcessMessage(ctx, tt.topic, tt.payload)
 			as.ErrorIs(err, tt.wantErr)

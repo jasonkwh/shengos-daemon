@@ -9,9 +9,11 @@ import (
 	"syscall"
 
 	"github.com/jasonkwh/perf"
+	"github.com/jasonkwh/shengos-daemon/internal/adapter"
 	"github.com/jasonkwh/shengos-daemon/internal/bus"
 	"github.com/jasonkwh/shengos-daemon/internal/clipboard"
 	"github.com/jasonkwh/shengos-daemon/internal/handler"
+	"github.com/jasonkwh/shengos-daemon/internal/message"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -26,6 +28,7 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
+//nolint:funlen
 func serve(cmd *cobra.Command, args []string) {
 	zl, err := initZapLogger()
 	if err != nil {
@@ -60,31 +63,40 @@ func serve(cmd *cobra.Command, args []string) {
 		zl.Fatal("failed to get hostname", zap.Error(err))
 	}
 
-	clb, err := clipboard.New(
-		cfg.Clipboard,
-		hostname,
-		clipboard.WithLogger(zl))
-	if err != nil {
-		zl.Fatal("failed to create clipboard", zap.Error(err))
+	var (
+		clb  adapter.Clipboard
+		subs []message.Subscription
+	)
+
+	if cfg.Clipboard.Enabled {
+		clb, err = clipboard.New(cfg.Clipboard, hostname,
+			clipboard.WithLogger(zl))
+		if err != nil {
+			zl.Fatal("failed to create clipboard", zap.Error(err))
+		}
+
+		subs = append(subs, message.ClipboardSubscription)
 	}
 
-	dbus, err := bus.NewDaemonBus(ctx,
-		cfg.MQTTConn,
+	dbus, err := bus.NewDaemonBus(ctx, cfg.MQTTConn,
 		handler.NewDaemonMessageHandler(clb,
 			handler.WithMessageLogger(zl)),
-		hostname,
-		bus.WithLogger(zl))
+		hostname, subs, bus.WithLogger(zl))
 	if err != nil {
 		zl.Fatal("failed to create daemon bus", zap.Error(err))
 	}
 
 	clPool = append(clPool, dbus)
 
-	go func() {
-		if cerr := clb.Watch(ctx, dbus.Publish); cerr != nil {
-			zl.Fatal("failed to watch clipboard", zap.Error(cerr))
-		}
-	}()
+	if cfg.Clipboard.Enabled {
+		zl.Info("watching clipboard")
+
+		go func() {
+			if cerr := clb.Watch(ctx, dbus.Publish); cerr != nil {
+				zl.Fatal("failed to watch clipboard", zap.Error(cerr))
+			}
+		}()
+	}
 
 	zl.Info("daemon started")
 
