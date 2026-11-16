@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
@@ -12,12 +13,15 @@ import (
 )
 
 func Test_daemonMessageHandler_ProcessMessage(t *testing.T) {
+	applyErr := errors.New("apply failed")
+
 	tests := []struct {
 		name             string
 		topic            string
 		payload          []byte
 		enabledClipboard bool
 		want             *message.ClipboardMessage
+		applyErr         error
 		wantErr          error
 	}{
 		{
@@ -42,6 +46,15 @@ func Test_daemonMessageHandler_ProcessMessage(t *testing.T) {
 			wantErr:          handler.ErrUnmarshalFailed,
 		},
 		{
+			name:             "failed to apply clipboard message",
+			topic:            message.ClipboardTopic,
+			payload:          messagePayload(t, &sampleClipboardMessage),
+			enabledClipboard: true,
+			want:             &sampleClipboardMessage,
+			applyErr:         applyErr,
+			wantErr:          applyErr,
+		},
+		{
 			name:    "clipboard is not enabled",
 			topic:   message.ClipboardTopic,
 			payload: messagePayload(t, &sampleClipboardMessage),
@@ -62,7 +75,7 @@ func Test_daemonMessageHandler_ProcessMessage(t *testing.T) {
 				if tt.want != nil {
 					mockClipboard.EXPECT().
 						Apply(ctx, *tt.want).
-						Return(nil)
+						Return(tt.applyErr)
 				}
 			}
 
