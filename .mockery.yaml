@@ -9,3 +9,6 @@ packages:
     interfaces:
       DaemonBus: {}
       Clipboard: {}
+      MQTTClient: {}
+      MQTTPublishAcker: {}
+      DaemonMessageHandler: {}

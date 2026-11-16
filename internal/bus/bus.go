@@ -19,9 +19,10 @@ import (
 var _ adapter.DaemonBus = (*daemonBus)(nil)
 
 type daemonBus struct {
-	mqttCl   *autopaho.ConnectionManager
-	zl       *zap.Logger
-	hostname string
+	mqttCl       adapter.MQTTClient
+	publishAcker adapter.MQTTPublishAcker
+	zl           *zap.Logger
+	hostname     string
 }
 
 func NewDaemonBus(
@@ -38,6 +39,10 @@ func NewDaemonBus(
 
 	for _, opt := range opts {
 		opt(dbus)
+	}
+
+	if dbus.mqttCl != nil {
+		return dbus, nil
 	}
 
 	if err := dbus.initMQTTClient(ctx, cfg, hdl); err != nil {
@@ -83,7 +88,7 @@ func (b *daemonBus) Publish(
 }
 
 func (b *daemonBus) Subscribe(ctx context.Context) error {
-	if err := b.subscribeTopics(ctx, b.mqttCl); err != nil {
+	if err := b.subscribeTopics(ctx); err != nil {
 		b.zl.Error("failed to subscribe to mqtt broker", zap.Error(err))
 
 		return err
@@ -124,7 +129,7 @@ func (b *daemonBus) initMQTTClient(
 		CleanStartOnInitialConnection: true,
 		SessionExpiryInterval:         sessionExpiryInterval,
 		OnConnectionUp: func(cm *autopaho.ConnectionManager, _ *paho.Connack) {
-			if serr := b.subscribeTopics(ctx, cm); serr != nil {
+			if serr := b.subscribeTopics(ctx); serr != nil {
 				b.zl.Error("failed to subscribe to mqtt broker", zap.Error(serr))
 			}
 		},
@@ -154,14 +159,21 @@ func (b *daemonBus) initMQTTClient(
 		return errConnectFailed(err)
 	}
 
+	b.mqttCl = cm
+
 	if err := cm.AwaitConnection(ctx); err != nil {
+		b.zl.Error("failed to await connection", zap.Error(err))
+
+		if derr := cm.Disconnect(context.Background()); derr != nil {
+			b.zl.Error("failed to disconnect from MQTT broker",
+				zap.Error(derr))
+		}
+
 		return errConnectFailed(err)
 	}
 
 	b.zl.Info("connected to mqtt broker",
 		zap.String("url", srvURL))
-
-	b.mqttCl = cm
 
 	return nil
 }
@@ -172,7 +184,6 @@ func (b *daemonBus) clientID() string {
 
 func (b *daemonBus) subscribeTopics(
 	ctx context.Context,
-	cm *autopaho.ConnectionManager,
 ) error {
 	b.zl.Debug("subscribing to mqtt broker")
 
@@ -180,7 +191,7 @@ func (b *daemonBus) subscribeTopics(
 		toPahoSubscribeOptions(message.ClipboardSubscription),
 	}
 
-	sub, err := cm.Subscribe(ctx, &paho.Subscribe{Subscriptions: subs})
+	sub, err := b.mqttCl.Subscribe(ctx, &paho.Subscribe{Subscriptions: subs})
 	if err != nil {
 		return errSubscribeFailed(err)
 	}
@@ -224,7 +235,7 @@ func (b *daemonBus) onPublishReceived(
 			return true, err
 		}
 
-		if err := pr.Client.Ack(pr.Packet); err != nil {
+		if err := b.ackMessage(pr); err != nil {
 			b.zl.Error("failed to ack message",
 				zap.String("topic", pr.Packet.Topic),
 				zap.Error(err))
@@ -234,4 +245,13 @@ func (b *daemonBus) onPublishReceived(
 
 		return true, nil
 	}
+}
+
+func (b *daemonBus) ackMessage(pr paho.PublishReceived) error {
+	if b.publishAcker != nil {
+		// for unit-testing purposes
+		return b.publishAcker.Ack(pr.Packet)
+	}
+
+	return pr.Client.Ack(pr.Packet)
 }
