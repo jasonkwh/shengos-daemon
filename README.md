@@ -26,10 +26,13 @@
 
 ---
 
-Each ShengOS host runs this daemon. It watches local state and publishes it
-to the fleet broker; peers apply what they receive. The broker is Eclipse
-Mosquitto on the fleet hub (`jasonkwh-bcm2711`, `tailscale0:1883`), declared
-in [my-nixos-configurations](https://github.com/jasonkwh/my-nixos-configurations).
+Each ShengOS host runs this daemon and connects to the fleet broker over
+MQTT. Desktop machines watch local state, publish it, and apply what peers
+send. The fleet hub runs the same daemon with clipboard disabled so it can
+host Mosquitto and take later message types without an X11 or Wayland
+session. The broker is Eclipse Mosquitto on the hub (`jasonkwh-bcm2711`,
+`tailscale0:1883`), declared in
+[my-nixos-configurations](https://github.com/jasonkwh/my-nixos-configurations).
 
 - **Clipboard** — copy and paste across desktop machines. X11 and Wayland
   only. Text, images, and file lists follow the host you are on. Sensitive
@@ -45,15 +48,16 @@ make serve
 ```
 
 That runs `go run main.go --config=./config/config.yaml serve`.
-`config/config.yaml` sets the log level, optional pprof, the SSH user
-embedded in file-list URIs, and the MQTT host, port, keepalive, and
-optional username and password.
+`config/config.yaml` sets the log level, optional pprof, whether clipboard
+sync is enabled, the SSH user embedded in file-list URIs, and the MQTT host,
+port, keepalive, and optional username and password.
 
 ```yaml
 LogLevel: 0          # zap: -1 debug, 0 info
 PProfEnabled: false
 
 Clipboard:
+  Enabled: true      # false on the headless fleet hub
   SSHUser: jasonkwh
 
 MQTTConn:
@@ -62,16 +66,21 @@ MQTTConn:
   KeepAlive: 30
 ```
 
-The process logs `daemon started` after the MQTT session is up and the
-clipboard watch is running. `SIGINT` or `SIGTERM` disconnects from the broker.
+The process logs `daemon started` after the MQTT session is up. With clipboard
+enabled it also logs `watching clipboard` and subscribes to
+`shengos/v1/clipboard`. With `Clipboard.Enabled: false` it stays connected
+and does not subscribe to clipboard topics. `SIGINT` or `SIGTERM` disconnects
+from the broker.
 
 ## Clipboard
 
 `internal/clipboard` watches the X11 or Wayland session clipboard
 ([`golang.design/x/clipboard`](https://github.com/golang-design/clipboard))
 and publishes a message: origin hostname, format (`text`, `image`, or
-`files`), and the bytes. Headless hosts have no clipboard session, so this
-feature stays on desktop machines. `internal/bus` connects with
+`files`), and the bytes. Set `Clipboard.Enabled: false` on headless hosts
+(the Pi hub has no display). The daemon still runs there for MQTT and future
+message types; it does not open a clipboard session or subscribe to the
+clipboard topic. `internal/bus` connects with
 [paho.golang](https://github.com/eclipse/paho.golang) (`autopaho`) and
 resubscribes whenever the session comes up. `internal/handler` decodes the
 payload and writes it to the local clipboard. The broker message is
@@ -109,7 +118,7 @@ back, so a remote copy is not published again.
 
 ```
 main.go
-cmd/                   # cobra: serve, zap, shutdown
+cmd/                   # cobra: serve wires clipboard, subs, bus, handler
 config/                # YAML config
 internal/
   clipboard/           # watch, apply, file:// → sftp://
