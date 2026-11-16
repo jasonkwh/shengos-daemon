@@ -10,8 +10,8 @@ const (
 )
 
 var (
-	ClipboardTopic = fmt.Sprintf("shengos/v%d/clipboard",
-		clipboardVersion)
+	ClipboardTopic = fmt.Sprintf("%s/clipboard",
+		topicPrefix(clipboardVersion))
 
 	ClipboardSubscription = Subscription{
 		Topic:             ClipboardTopic,
