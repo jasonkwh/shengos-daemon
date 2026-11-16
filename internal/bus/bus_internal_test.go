@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var sampleHostname = "jasonkwh-test-rig"
+const sampleHostname = "jasonkwh-test-rig"
 
 func Test_daemonBus_onPublishReceived(t *testing.T) {
 	packet := &paho.Publish{

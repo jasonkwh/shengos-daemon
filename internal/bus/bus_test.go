@@ -16,15 +16,13 @@ import (
 	mock_adapter "github.com/jasonkwh/shengos-daemon/mocks/adapter"
 )
 
-var (
-	sampleMQTTConnConfig = config.MQTTConnConfig{
-		Host:      "localhost",
-		Port:      "1883",
-		KeepAlive: 10,
-	}
+var sampleMQTTConnConfig = config.MQTTConnConfig{
+	Host:      "localhost",
+	Port:      "1883",
+	KeepAlive: 10,
+}
 
-	sampleHostname = "jasonkwh-test-rig"
-)
+const sampleHostname = "jasonkwh-test-rig"
 
 func Test_daemonBus_Publish(t *testing.T) {
 	sampleMessage := &message.ClipboardMessage{

@@ -2,10 +2,8 @@ package clipboard_test
 
 import "github.com/jasonkwh/shengos-daemon/config"
 
-var (
-	sampleClipboardConfig = config.ClipboardConfig{
-		SSHUser: "jasonkwh",
-	}
+var sampleClipboardConfig = config.ClipboardConfig{
+	SSHUser: "jasonkwh",
+}
 
-	sampleHostname = "jasonkwh-test-rig"
-)
+const sampleHostname = "jasonkwh-test-rig"
