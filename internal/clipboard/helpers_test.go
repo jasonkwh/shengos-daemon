@@ -98,3 +98,32 @@ func Test_clipboard_toSFTPURIList(t *testing.T) {
 		})
 	}
 }
+
+func Test_clipboard_ownWrite(t *testing.T) {
+	format := clipboard.FmtText
+	data := []byte("hello")
+
+	t.Run("returns true for a remembered hash", func(t *testing.T) {
+		as := assert.New(t)
+		c := &clboard{}
+
+		c.remember(format, data)
+		as.True(c.ownWrite(format, data))
+	})
+
+	t.Run("returns false after the hash is forgotten", func(t *testing.T) {
+		as := assert.New(t)
+		c := &clboard{}
+
+		c.remember(format, data)
+		c.forget(format, data)
+		as.False(c.ownWrite(format, data))
+	})
+
+	t.Run("returns false when nothing was remembered", func(t *testing.T) {
+		as := assert.New(t)
+		c := &clboard{}
+
+		as.False(c.ownWrite(format, data))
+	})
+}
