@@ -1,14 +1,17 @@
 {
   description = "ShengOS Daemon";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
   outputs = { self, nixpkgs }:
     let
       systems = [ "aarch64-linux" "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
       packageFor = system:
-        (import nixpkgs { inherit system; }).buildGoModule {
+        let
+          pkgs = import nixpkgs { inherit system; };
+          buildGoModule = pkgs.buildGoModule.override { go = pkgs.go_1_27; };
+        in buildGoModule {
           pname = "shengos-daemon";
           version = builtins.elemAt (builtins.match "([^\n]*\n)*version: ([0-9]+\\.[0-9]+\\.[0-9]+)\n?" (builtins.readFile ./version.yaml)) 1;
           src = self;
