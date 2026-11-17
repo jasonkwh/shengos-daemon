@@ -45,23 +45,73 @@
           configFile = lib.mkOption {
             type = lib.types.str;
             default = "${self}/config/config.yaml";
-            description = "Path to the daemon YAML configuration file.";
+            description = "Path to the daemon YAML configuration file (the defaults).";
+          };
+          environment = lib.mkOption {
+            type = lib.types.attrsOf lib.types.str;
+            default = { };
+            example = { CLIPBOARD_ENABLED = "false"; MQTTCONN_HOST = "localhost"; };
+            description = ''
+              Environment variables that override configFile. A key is the
+              upper-cased config field path joined with underscores, e.g.
+              MQTTCONN_KEEPALIVE. Do not put secrets here: the unit lives in
+              the world-readable Nix store; use environmentFile instead.
+            '';
+          };
+          environmentFile = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = ''
+              Optional file of KEY=value lines loaded into the service
+              environment, for secrets such as MQTTCONN_USERNAME and
+              MQTTCONN_PASSWORD. Not copied to the Nix store.
+            '';
+          };
+          requireGraphicalSession = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = ''
+              Bind the user service to graphical-session.target (needed
+              for clipboard access). When disabled, it starts from
+              default.target, suitable for headless hosts.
+            '';
+          };
+          user = lib.mkOption {
+            type = lib.types.str;
+            default = "jasonkwh";
+            description = ''
+              User whose systemd user manager runs the daemon. The unit is
+              skipped for every other user. The user needs linger enabled
+              for the daemon to run without an active login session.
+            '';
           };
         };
 
-        config = lib.mkIf config.services.shengos-daemon.enable {
-          systemd.services.shengos-daemon = {
-            description = "ShengOS Daemon";
-            wantedBy = [ "multi-user.target" ];
-            after = [ "network-online.target" ];
-            wants = [ "network-online.target" ];
-            serviceConfig = {
-              ExecStart = "${config.services.shengos-daemon.package}/bin/shengosd --config=${config.services.shengos-daemon.configFile} serve";
-              Restart = "on-failure";
-              RestartSec = 5;
+        config =
+          let
+            cfg = config.services.shengos-daemon;
+            target =
+              if cfg.requireGraphicalSession
+              then "graphical-session.target"
+              else "default.target";
+          in
+          lib.mkIf cfg.enable {
+            systemd.user.services.shengos-daemon = {
+              description = "ShengOS Daemon";
+              wantedBy = [ target ];
+              partOf = lib.optionals cfg.requireGraphicalSession [ target ];
+              after = lib.optionals cfg.requireGraphicalSession [ target ];
+              unitConfig.ConditionUser = cfg.user;
+              inherit (cfg) environment;
+              serviceConfig = {
+                ExecStart = "${cfg.package}/bin/shengosd --config=${cfg.configFile} serve";
+                Restart = "on-failure";
+                RestartSec = 5;
+              } // lib.optionalAttrs (cfg.environmentFile != null) {
+                EnvironmentFile = cfg.environmentFile;
+              };
             };
           };
-        };
       };
     };
 }
