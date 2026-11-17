@@ -2,10 +2,10 @@ package handler
 
 import "go.uber.org/zap"
 
-type daemonMessageHandlerOption func(*daemonMessageHandler)
+type daemonTopicHandlerOption func(*handlerCore)
 
-func WithMessageLogger(zl *zap.Logger) daemonMessageHandlerOption {
-	return func(h *daemonMessageHandler) {
+func WithLogger(zl *zap.Logger) daemonTopicHandlerOption {
+	return func(h *handlerCore) {
 		h.zl = zl
 	}
 }

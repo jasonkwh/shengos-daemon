@@ -2,10 +2,6 @@ package adapter
 
 import "context"
 
-type DaemonMessageHandler interface {
-	ProcessMessage(
-		ctx context.Context,
-		topic string,
-		payload []byte,
-	) error
+type DaemonTopicHandler interface {
+	Handle(ctx context.Context, payload []byte) error
 }
