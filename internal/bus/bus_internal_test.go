@@ -6,6 +6,8 @@ import (
 
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/go-openapi/testify/v2/assert"
+	"github.com/jasonkwh/shengos-daemon/internal/adapter"
+	"github.com/jasonkwh/shengos-daemon/internal/message"
 	mock_adapter "github.com/jasonkwh/shengos-daemon/mocks/adapter"
 	"go.uber.org/zap"
 )
@@ -13,32 +15,48 @@ import (
 const sampleHostname = "jasonkwh-test-rig"
 
 func Test_daemonBus_onPublishReceived(t *testing.T) {
-	packet := &paho.Publish{
-		Topic:   "shengos/v1/clipboard",
-		Payload: []byte("payload"),
-	}
-
 	processErr := errors.New("process error")
 	ackErr := errors.New("ack error")
 
 	tests := []struct {
 		name         string
+		packet       *paho.Publish
 		processedErr error
 		ackErr       error
 		wantErr      error
 	}{
 		{
 			name: "success",
+			packet: &paho.Publish{
+				Topic:   message.ClipboardTopic,
+				Payload: []byte("payload"),
+			},
 		},
 		{
-			name:         "process error",
+			name: "process error",
+			packet: &paho.Publish{
+				Topic:   message.ClipboardTopic,
+				Payload: []byte("payload"),
+			},
 			processedErr: processErr,
 			wantErr:      processErr,
 		},
 		{
-			name:    "ack error",
+			name: "ack error",
+			packet: &paho.Publish{
+				Topic:   message.ClipboardTopic,
+				Payload: []byte("payload"),
+			},
 			ackErr:  ackErr,
 			wantErr: ackErr,
+		},
+		{
+			name: "unknown topic",
+			packet: &paho.Publish{
+				Topic:   "shengos/v1/unknown",
+				Payload: []byte("payload"),
+			},
+			wantErr: ErrUnknownTopic,
 		},
 	}
 	for _, tt := range tests {
@@ -48,18 +66,24 @@ func Test_daemonBus_onPublishReceived(t *testing.T) {
 
 			dbus, tm := newMockDaemonBus(t)
 
-			tm.mockMessageHandler.EXPECT().
-				ProcessMessage(ctx, packet.Topic, packet.Payload).
-				Return(tt.processedErr)
-
-			if tt.processedErr == nil {
-				tm.mockMQTTPublishAcker.EXPECT().
-					Ack(packet).
-					Return(tt.ackErr)
+			topicHandlers := map[string]adapter.DaemonTopicHandler{
+				message.ClipboardTopic: tm.mockTopicHandler,
 			}
 
-			handled, err := dbus.onPublishReceived(ctx, tm.mockMessageHandler)(paho.PublishReceived{
-				Packet: packet,
+			if _, ok := topicHandlers[tt.packet.Topic]; ok {
+				tm.mockTopicHandler.EXPECT().
+					Handle(ctx, tt.packet.Payload).
+					Return(tt.processedErr)
+
+				if tt.processedErr == nil {
+					tm.mockMQTTPublishAcker.EXPECT().
+						Ack(tt.packet).
+						Return(tt.ackErr)
+				}
+			}
+
+			handled, err := dbus.onPublishReceived(ctx, topicHandlers)(paho.PublishReceived{
+				Packet: tt.packet,
 			})
 
 			as.True(handled)
@@ -71,14 +95,14 @@ func Test_daemonBus_onPublishReceived(t *testing.T) {
 type testMocks struct {
 	mockMQTTClient       *mock_adapter.MockMQTTClient
 	mockMQTTPublishAcker *mock_adapter.MockMQTTPublishAcker
-	mockMessageHandler   *mock_adapter.MockDaemonMessageHandler
+	mockTopicHandler     *mock_adapter.MockDaemonTopicHandler
 }
 
 func newMockDaemonBus(t *testing.T) (*daemonBus, *testMocks) {
 	tm := &testMocks{
 		mockMQTTClient:       mock_adapter.NewMockMQTTClient(t),
 		mockMQTTPublishAcker: mock_adapter.NewMockMQTTPublishAcker(t),
-		mockMessageHandler:   mock_adapter.NewMockDaemonMessageHandler(t),
+		mockTopicHandler:     mock_adapter.NewMockDaemonTopicHandler(t),
 	}
 
 	return &daemonBus{

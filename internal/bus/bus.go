@@ -29,8 +29,8 @@ type daemonBus struct {
 func NewDaemonBus(
 	ctx context.Context,
 	cfg config.MQTTConnConfig,
-	hdl adapter.DaemonMessageHandler,
 	hostname string,
+	topicHdlrs map[string]adapter.DaemonTopicHandler,
 	subs []message.Subscription,
 	opts ...daemonBusOption,
 ) (adapter.DaemonBus, error) {
@@ -48,7 +48,7 @@ func NewDaemonBus(
 		return dbus, nil
 	}
 
-	if err := dbus.initMQTTClient(ctx, cfg, hdl); err != nil {
+	if err := dbus.initMQTTClient(ctx, cfg, topicHdlrs); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +117,7 @@ func (b *daemonBus) Close() error {
 func (b *daemonBus) initMQTTClient(
 	ctx context.Context,
 	cfg config.MQTTConnConfig,
-	hdl adapter.DaemonMessageHandler,
+	topicHdlrs map[string]adapter.DaemonTopicHandler,
 ) error {
 	srvURL := net.JoinHostPort(cfg.Host, cfg.Port)
 
@@ -145,7 +145,7 @@ func (b *daemonBus) initMQTTClient(
 			b.zl.Error("mqtt client error", zap.Error(err))
 		},
 		OnPublishReceived: []func(paho.PublishReceived) (bool, error){
-			b.onPublishReceived(ctx, hdl),
+			b.onPublishReceived(ctx, topicHdlrs),
 		},
 	}
 
@@ -230,10 +230,20 @@ func (b *daemonBus) subscribeTopics(
 
 func (b *daemonBus) onPublishReceived(
 	ctx context.Context,
-	hdl adapter.DaemonMessageHandler,
+	topicHdlrs map[string]adapter.DaemonTopicHandler,
 ) func(paho.PublishReceived) (bool, error) {
 	return func(pr paho.PublishReceived) (bool, error) {
-		if err := hdl.ProcessMessage(ctx, pr.Packet.Topic, pr.Packet.Payload); err != nil {
+		hdl, ok := topicHdlrs[pr.Packet.Topic]
+		if !ok {
+			err := errUnknownTopic(pr.Packet.Topic)
+			b.zl.Error("handler not found",
+				zap.String("topic", pr.Packet.Topic),
+				zap.Error(err))
+
+			return true, err
+		}
+
+		if err := hdl.Handle(ctx, pr.Packet.Payload); err != nil {
 			b.zl.Error("handler failed",
 				zap.String("topic", pr.Packet.Topic),
 				zap.Error(err))

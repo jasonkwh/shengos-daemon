@@ -11,6 +11,7 @@ var (
 	ErrSubscribeFailed   = errors.New("subscribe failed")
 	ErrSubscribeRejected = errors.New("subscribe rejected")
 	ErrCloseFailed       = errors.New("close failed")
+	ErrUnknownTopic      = errors.New("unknown topic")
 )
 
 func errConnectFailed(err error) error {
@@ -31,4 +32,8 @@ func errSubscribeRejected(reasons string) error {
 
 func errCloseFailed(err error) error {
 	return fmt.Errorf("%w: %w", ErrCloseFailed, err)
+}
+
+func errUnknownTopic(topic string) error {
+	return fmt.Errorf("%w: %s", ErrUnknownTopic, topic)
 }

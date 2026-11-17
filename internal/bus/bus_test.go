@@ -154,8 +154,8 @@ func Test_daemonBus_Subscribe(t *testing.T) {
 }
 
 type testMocks struct {
-	mockMQTTClient     *mock_adapter.MockMQTTClient
-	mockMessageHandler *mock_adapter.MockDaemonMessageHandler
+	mockMQTTClient   *mock_adapter.MockMQTTClient
+	mockTopicHandler *mock_adapter.MockDaemonTopicHandler
 }
 
 func newMockDaemonBus(
@@ -164,15 +164,17 @@ func newMockDaemonBus(
 	subs []message.Subscription,
 ) (adapter.DaemonBus, *testMocks, error) {
 	tm := &testMocks{
-		mockMQTTClient:     mock_adapter.NewMockMQTTClient(t),
-		mockMessageHandler: mock_adapter.NewMockDaemonMessageHandler(t),
+		mockMQTTClient:   mock_adapter.NewMockMQTTClient(t),
+		mockTopicHandler: mock_adapter.NewMockDaemonTopicHandler(t),
 	}
 
 	dbus, err := bus.NewDaemonBus(
 		ctx,
 		sampleMQTTConnConfig,
-		tm.mockMessageHandler,
 		sampleHostname,
+		map[string]adapter.DaemonTopicHandler{
+			message.ClipboardTopic: tm.mockTopicHandler,
+		},
 		subs,
 		bus.WithMQTTClient(tm.mockMQTTClient))
 
