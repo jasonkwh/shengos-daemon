@@ -82,9 +82,10 @@ and publishes a message: origin hostname, format (`text`, `image`, or
 message types; it does not open a clipboard session or subscribe to the
 clipboard topic. `internal/bus` connects with
 [paho.golang](https://github.com/eclipse/paho.golang) (`autopaho`) and
-resubscribes whenever the session comes up. `internal/handler` decodes the
-payload and writes it to the local clipboard. The broker message is
-acknowledged after that write succeeds.
+resubscribes whenever the session comes up. Inbound publishes are routed by
+MQTT topic to a registered `DaemonTopicHandler`; the clipboard handler
+(`internal/handler`) decodes the payload and writes it to the local clipboard.
+The broker message is acknowledged after that write succeeds.
 
 Each connection starts clean. The subscription is `NoLocal`, so the broker
 does not deliver a host its own publish. The daemon also remembers the
@@ -118,14 +119,14 @@ back, so a remote copy is not published again.
 
 ```
 main.go
-cmd/                   # cobra: serve wires clipboard, subs, bus, handler
+cmd/                   # cobra: serve wires clipboard, topic handlers, subs, bus
 config/                # YAML config
 internal/
   clipboard/           # watch, apply, file:// → sftp://
-  bus/                 # MQTT connection
-  handler/             # topic → clipboard apply
-  message/             # topic, QoS, MessagePack payload
-  adapter/             # bus, clipboard, and handler interfaces
+  bus/                 # MQTT connect, publish, subscribe, dispatch by topic
+  handler/             # per-topic handlers (e.g. clipboard inbound apply)
+  message/             # topics, subscriptions, MessagePack payloads
+  adapter/             # DaemonBus, Clipboard, DaemonTopicHandler
 mocks/
 version.yaml           # bumped on push to main
 .github/workflows/     # lint, vet, test, coverage, version bump
