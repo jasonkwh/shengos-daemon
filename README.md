@@ -63,12 +63,12 @@ shutdown and broker disconnect.
 `config/config.yaml` is the example configuration:
 
 ```yaml
-LogLevel: 0          # zap level: -1 debug, 0 info
+LogLevel: 0 # zap level: -1 debug, 0 info
 PProfEnabled: false
 
 Clipboard:
-  Enabled: true      # disable on headless hosts
-  SSHUser: jasonkwh  # user embedded in file-list SFTP URIs
+  Enabled: true # disable on headless hosts
+  SSHUser: jasonkwh # user embedded in file-list SFTP URIs
 
 MQTTConn:
   Host: jasonkwh-bcm2711
@@ -103,14 +103,14 @@ appropriate permissions to retrieve them.
 
 Clipboard MQTT details:
 
-| Property       | Value                                                    |
-| -------------- | -------------------------------------------------------- |
-| Topic          | `shengos/v1/clipboard`                                   |
-| Payload        | MessagePack (`origin`, `format`, `data`)                 |
-| QoS            | 1 (at least once)                                        |
-| Publish retain | No                                                       |
-| Subscription   | `NoLocal`; do not send retained messages on subscribe    |
-| Client ID      | `shengos-<hostname>`                                    |
+| Property       | Value                                                 |
+| -------------- | ----------------------------------------------------- |
+| Topic          | `shengos/v1/clipboard`                                |
+| Payload        | MessagePack (`origin`, `format`, `data`)              |
+| QoS            | 1 (at least once)                                     |
+| Publish retain | No                                                    |
+| Subscription   | `NoLocal`; do not send retained messages on subscribe |
+| Client ID      | `shengos-<hostname>`                                  |
 
 The MQTT client uses a clean start on its initial connection, a 60-second
 session expiry, and automatically reconnects/resubscribes through `autopaho`.
@@ -167,18 +167,3 @@ broker/configuration.
 | `make update`           | Update flake inputs                       |
 
 `serve` is the default Make target.
-
-## Repository layout
-
-```text
-cmd/                   # Cobra commands and daemon wiring
-config/                # YAML configuration and Go config types
-internal/adapter/      # interfaces between daemon components
-internal/bus/          # MQTT connection, publish, subscribe, dispatch
-internal/clipboard/    # clipboard watch/apply and file URI conversion
-internal/handler/      # inbound topic handlers
-internal/message/      # topics, subscriptions, and MessagePack messages
-flake.nix              # multi-architecture packages and NixOS module
-version.yaml           # project version
-.github/workflows/     # CI workflows
-```
