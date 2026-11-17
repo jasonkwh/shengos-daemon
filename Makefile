@@ -8,6 +8,9 @@ lint:
 test-unit:
 	go test -count=1 ./...
 
+test-integration:
+	go test -count=1 -p=1 -tags=integration -v ./...
+
 test-clean-cache:
 	go clean -testcache
 
