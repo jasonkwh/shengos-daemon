@@ -86,6 +86,19 @@ For a headless broker host, set `Clipboard.Enabled: false`. The daemon will
 still connect to MQTT but will not initialize a local clipboard or subscribe to
 clipboard messages.
 
+Every field can also be overridden with an environment variable, which takes
+precedence over the file. The name is the upper-cased field path joined with
+underscores:
+
+```bash
+CLIPBOARD_ENABLED=false MQTTCONN_HOST=localhost shengosd --config=./config/config.yaml serve
+```
+
+This keeps `config/config.yaml` as the single set of defaults; per-host
+differences are passed as environment variables, and credentials
+(`MQTTCONN_USERNAME`, `MQTTCONN_PASSWORD`) can come from the environment instead
+of the file.
+
 ## Clipboard sync
 
 When enabled, the daemon watches the local X11 or Wayland clipboard using
@@ -133,23 +146,39 @@ nix eval --raw .#packages.x86_64-linux.shengos-daemon.drvPath
 nix eval --raw .#packages.aarch64-linux.shengos-daemon.drvPath
 ```
 
-The module provides `services.shengos-daemon.enable`, `package`, and
-`configFile` options. Add the flake as an input and enable the module in your
-NixOS configuration, for example:
+The module provides these `services.shengos-daemon` options:
+
+| Option                    | Description                                                               |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `enable`                  | Enable the daemon                                                         |
+| `package`                 | Package providing `shengosd`                                              |
+| `configFile`              | YAML defaults; defaults to `config/config.yaml` from the flake source     |
+| `environment`             | Environment variables overriding `configFile` (not for secrets)           |
+| `environmentFile`         | File of `KEY=value` lines for secrets, kept out of the Nix store          |
+| `user`                    | User whose systemd user manager runs the daemon (default `jasonkwh`)      |
+| `requireGraphicalSession` | Bind to `graphical-session.target`; otherwise start from `default.target` |
+
+Add the flake as an input and enable the module in your NixOS configuration,
+for example:
 
 ```nix
 {
   imports = [ shengos-daemon.nixosModules.default ];
   services.shengos-daemon = {
     enable = true;
-    configFile = "/path/to/config.yaml";
+    requireGraphicalSession = true; # clipboard sync needs a graphical session
+    environment.MQTTCONN_HOST = "broker.example";
   };
 }
 ```
 
-The systemd unit runs `shengosd --config=<configFile> serve` and restarts on
-failure. The YAML file must exist on the target host and point to its intended
-broker/configuration.
+The daemon runs as a systemd **user** service (`ConditionUser` limits it to
+`user`) and restarts on failure. Clipboard sync needs the display environment
+of a graphical session, so set `requireGraphicalSession = true` on desktops and
+set `CLIPBOARD_ENABLED = "false"` with `requireGraphicalSession = false` on
+headless hosts. The user needs `users.users.<name>.linger = true` for the
+service to run without a login session, which headless hosts rely on. Logs are
+available with `journalctl --user -u shengos-daemon`.
 
 ## Commands
 
