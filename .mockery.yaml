@@ -11,4 +11,4 @@ packages:
       Clipboard: {}
       MQTTClient: {}
       MQTTPublishAcker: {}
-      DaemonMessageHandler: {}
+      DaemonTopicHandler: {}
