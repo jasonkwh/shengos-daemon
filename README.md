@@ -165,5 +165,6 @@ broker/configuration.
 | `make build-arm64`      | Build Linux arm64 binary                  |
 | `make build-mocks`      | Regenerate mocks with mockery             |
 | `make update`           | Update flake inputs                       |
+| `make update-vendor-hash` | Recalculate and verify the Go dependency hash |
 
 `serve` is the default Make target.
