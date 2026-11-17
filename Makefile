@@ -1,6 +1,8 @@
-.PHONY: default lint test-unit test-clean-cache test-coverage serve build build-amd64 build-arm64 build-mocks
+.PHONY: lint test-unit test-clean-cache test-coverage serve build build-amd64 build-arm64 build-mocks update
+.DEFAULT_GOAL := serve
 
-default: serve
+update:
+	nix flake update
 
 lint:
 	golangci-lint run -c .golangci.yml
