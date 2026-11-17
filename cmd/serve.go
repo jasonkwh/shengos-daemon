@@ -63,10 +63,10 @@ func serve(cmd *cobra.Command, args []string) {
 		zl.Fatal("failed to get hostname", zap.Error(err))
 	}
 
-	var (
-		clb  adapter.Clipboard
-		subs []message.Subscription
-	)
+	var clb adapter.Clipboard
+
+	subs := make([]message.Subscription, 0)
+	topicHdlrs := make(map[string]adapter.DaemonTopicHandler)
 
 	if cfg.Clipboard.Enabled {
 		clb, err = clipboard.New(cfg.Clipboard, hostname,
@@ -76,12 +76,13 @@ func serve(cmd *cobra.Command, args []string) {
 		}
 
 		subs = append(subs, message.ClipboardSubscription)
+		topicHdlrs[message.ClipboardTopic] = handler.NewClipboardTopicHandler(
+			clb,
+			handler.WithLogger(zl))
 	}
 
-	dbus, err := bus.NewDaemonBus(ctx, cfg.MQTTConn,
-		handler.NewDaemonMessageHandler(clb,
-			handler.WithMessageLogger(zl)),
-		hostname, subs, bus.WithLogger(zl))
+	dbus, err := bus.NewDaemonBus(ctx, cfg.MQTTConn, hostname,
+		topicHdlrs, subs, bus.WithLogger(zl))
 	if err != nil {
 		zl.Fatal("failed to create daemon bus", zap.Error(err))
 	}
