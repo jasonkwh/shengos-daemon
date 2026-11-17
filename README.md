@@ -21,6 +21,7 @@
   <a href="https://github.com/jasonkwh/shengos-daemon/actions/workflows/lint.yml"><img src="https://img.shields.io/github/actions/workflow/status/jasonkwh/shengos-daemon/lint.yml?label=lint" alt="lint"></a>
   <a href="https://github.com/jasonkwh/shengos-daemon/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/jasonkwh/shengos-daemon/test.yml?label=test" alt="test"></a>
   <a href="https://github.com/jasonkwh/shengos-daemon/actions/workflows/vet.yml"><img src="https://img.shields.io/github/actions/workflow/status/jasonkwh/shengos-daemon/vet.yml?label=vet" alt="vet"></a>
+  <a href="https://github.com/jasonkwh/shengos-daemon/actions/workflows/eval.yml"><img src="https://img.shields.io/github/actions/workflow/status/jasonkwh/shengos-daemon/eval.yml?label=eval" alt="eval"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
 </p>
 
@@ -53,11 +54,11 @@ sync is enabled, the SSH user embedded in file-list URIs, and the MQTT host,
 port, keepalive, and optional username and password.
 
 ```yaml
-LogLevel: 0          # zap: -1 debug, 0 info
+LogLevel: 0 # zap: -1 debug, 0 info
 PProfEnabled: false
 
 Clipboard:
-  Enabled: true      # false on the headless fleet hub
+  Enabled: true # false on the headless fleet hub
   SSHUser: jasonkwh
 
 MQTTConn:
@@ -92,26 +93,26 @@ does not deliver a host its own publish. The daemon also remembers the
 hash of a clipboard it just applied and drops the watch event that comes
 back, so a remote copy is not published again.
 
-|                |                                                                 |
-| -------------- | --------------------------------------------------------------- |
-| Topic          | `shengos/v1/clipboard`                                          |
-| Encoding       | MessagePack                                                     |
-| QoS            | 1 (at least once)                                               |
-| Retain         | no                                                              |
-| Subscribe      | `NoLocal`; retained messages are not sent on subscribe          |
-| Client ID      | `shengos-<hostname>`                                            |
-| Session expiry | 60 seconds                                                      |
+|                |                                                        |
+| -------------- | ------------------------------------------------------ |
+| Topic          | `shengos/v1/clipboard`                                 |
+| Encoding       | MessagePack                                            |
+| QoS            | 1 (at least once)                                      |
+| Retain         | no                                                     |
+| Subscribe      | `NoLocal`; retained messages are not sent on subscribe |
+| Client ID      | `shengos-<hostname>`                                   |
+| Session expiry | 60 seconds                                             |
 
 ## Commands
 
-| Command                 | Description                                          |
-| ----------------------- | ---------------------------------------------------- |
-| `make serve`            | Run the daemon with `config/config.yaml`             |
-| `make lint`             | `golangci-lint` (`.golangci.yml`)                    |
-| `make test-unit`        | `go test ./...`                                      |
-| `make test-coverage`    | Atomic coverage profile in `coverage.out`            |
-| `make test-clean-cache` | `go clean -testcache`                                |
-| `make build-mocks`      | Regenerate `mocks/` with mockery                     |
+| Command                 | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `make serve`            | Run the daemon with `config/config.yaml`  |
+| `make lint`             | `golangci-lint` (`.golangci.yml`)         |
+| `make test-unit`        | `go test ./...`                           |
+| `make test-coverage`    | Atomic coverage profile in `coverage.out` |
+| `make test-clean-cache` | `go clean -testcache`                     |
+| `make build-mocks`      | Regenerate `mocks/` with mockery          |
 
 `serve` is the default target.
 
