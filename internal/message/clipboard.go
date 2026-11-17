@@ -6,7 +6,7 @@ import (
 
 const (
 	clipboardVersion = 1
-	clipboardRetain  = true
+	clipboardRetain  = false
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 		QoS:               QoSAtLeastOnce,
 		NoLocal:           true,
 		RetainAsPublished: false,
-		RetainHandling:    RetainHandlingOnSubscribe,
+		RetainHandling:    RetainDoNotSend,
 	}
 )
 
