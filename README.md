@@ -96,8 +96,8 @@ back, so a remote copy is not published again.
 | Topic          | `shengos/v1/clipboard`                                          |
 | Encoding       | MessagePack                                                     |
 | QoS            | 1 (at least once)                                               |
-| Retain         | yes                                                             |
-| Subscribe      | `NoLocal`; retained messages delivered on subscribe             |
+| Retain         | no                                                              |
+| Subscribe      | `NoLocal`; retained messages are not sent on subscribe          |
 | Client ID      | `shengos-<hostname>`                                            |
 | Session expiry | 60 seconds                                                      |
 
