@@ -132,6 +132,9 @@ func (b *daemonBus) initMQTTClient(
 		CleanStartOnInitialConnection: true,
 		SessionExpiryInterval:         sessionExpiryInterval,
 		OnConnectionUp: func(cm *autopaho.ConnectionManager, _ *paho.Connack) {
+			b.zl.Info("connected to mqtt broker",
+				zap.String("url", srvURL))
+
 			if serr := b.subscribeTopics(ctx); serr != nil {
 				b.zl.Error("failed to subscribe to mqtt broker", zap.Error(serr))
 			}
@@ -174,9 +177,6 @@ func (b *daemonBus) initMQTTClient(
 
 		return errConnectFailed(err)
 	}
-
-	b.zl.Info("connected to mqtt broker",
-		zap.String("url", srvURL))
 
 	return nil
 }
