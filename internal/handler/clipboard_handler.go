@@ -52,7 +52,6 @@ func (h *clipboardTopicHandler) Handle(
 	if err := h.clipboard.Apply(ctx, msg); err != nil {
 		h.core.zl.Error("failed to apply clipboard message",
 			zap.String("origin", msg.Origin),
-			zap.String("format", msg.Format.String()),
 			zap.Error(err))
 
 		return err

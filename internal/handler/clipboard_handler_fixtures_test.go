@@ -5,7 +5,11 @@ import "github.com/jasonkwh/shengos-daemon/internal/message"
 var (
 	sampleClipboardMessage = message.ClipboardMessage{
 		Origin: "jasonkwh-test-rig",
-		Format: message.ClipboardFormatText,
-		Data:   []byte("test"),
+		Items: []message.ClipboardItem{
+			{
+				Format: message.ClipboardFormatText,
+				Data:   []byte("test"),
+			},
+		},
 	}
 )
