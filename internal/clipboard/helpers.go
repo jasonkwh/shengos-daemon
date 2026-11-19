@@ -67,7 +67,7 @@ func (c *clboard) remember(format clipboard.Format, data []byte) {
 	hash := clipboardHash(format, data)
 
 	c.mu.Lock()
-	c.written = &hash
+	c.written[format] = hash
 	c.mu.Unlock()
 }
 
@@ -77,8 +77,8 @@ func (c *clboard) forget(format clipboard.Format, data []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.written != nil && *c.written == hash {
-		c.written = nil
+	if savedHash, ok := c.written[format]; ok && savedHash == hash {
+		delete(c.written, format)
 	}
 }
 
@@ -88,11 +88,11 @@ func (c *clboard) ownWrite(format clipboard.Format, data []byte) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.written == nil || *c.written != hash {
+	if savedHash, ok := c.written[format]; !ok || savedHash != hash {
 		return false
 	}
 
-	c.written = nil
+	delete(c.written, format)
 
 	return true
 }

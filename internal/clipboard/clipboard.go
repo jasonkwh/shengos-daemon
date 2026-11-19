@@ -22,7 +22,7 @@ type clboard struct {
 	writeFunc clipboardWriteFunc
 	skipInit  bool
 
-	written *[32]byte
+	written map[clipboard.Format][32]byte
 	mu      sync.Mutex
 }
 
@@ -37,6 +37,7 @@ func New(
 		hostname:  hostname,
 		watchFunc: clipboard.Watch,
 		writeFunc: clipboard.Write,
+		written:   make(map[clipboard.Format][32]byte),
 	}
 
 	for _, opt := range opts {

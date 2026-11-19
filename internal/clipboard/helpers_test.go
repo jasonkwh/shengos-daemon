@@ -15,7 +15,9 @@ func Test_clipboard_writeRemembered(t *testing.T) {
 
 	t.Run("stores the hash before write", func(t *testing.T) {
 		as := assert.New(t)
-		c := &clboard{}
+		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
+		}
 		c.writeFunc = func(context.Context, clipboard.Format, []byte, ...clipboard.Option) (<-chan struct{}, error) {
 			as.True(c.ownWrite(format, data))
 
@@ -29,6 +31,7 @@ func Test_clipboard_writeRemembered(t *testing.T) {
 	t.Run("clears the hash when write fails", func(t *testing.T) {
 		as := assert.New(t)
 		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
 			writeFunc: func(context.Context, clipboard.Format, []byte, ...clipboard.Option) (<-chan struct{}, error) {
 				return nil, errors.New("write failed")
 			},
@@ -105,7 +108,9 @@ func Test_clipboard_ownWrite(t *testing.T) {
 
 	t.Run("returns true for a remembered hash", func(t *testing.T) {
 		as := assert.New(t)
-		c := &clboard{}
+		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
+		}
 
 		c.remember(format, data)
 		as.True(c.ownWrite(format, data))
@@ -113,7 +118,9 @@ func Test_clipboard_ownWrite(t *testing.T) {
 
 	t.Run("returns false after the hash is forgotten", func(t *testing.T) {
 		as := assert.New(t)
-		c := &clboard{}
+		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
+		}
 
 		c.remember(format, data)
 		c.forget(format, data)
@@ -122,8 +129,32 @@ func Test_clipboard_ownWrite(t *testing.T) {
 
 	t.Run("returns false when nothing was remembered", func(t *testing.T) {
 		as := assert.New(t)
-		c := &clboard{}
+		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
+		}
 
 		as.False(c.ownWrite(format, data))
+	})
+
+	t.Run("consumes each format's remembered hash independently", func(t *testing.T) {
+		data1 := []byte("file:///home/jasonkwh/test.txt")
+		data2 := []byte("sftp://jasonkwh@jasonkwh-test-rig/home/jasonkwh/test.txt")
+
+		as := assert.New(t)
+		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
+		}
+
+		c.remember(clipboard.FmtText, data1)
+		c.remember(clipboard.FmtFiles, data2)
+
+		ownWrite := c.ownWrite(clipboard.FmtText, data1)
+		as.True(ownWrite)
+		ownWrite = c.ownWrite(clipboard.FmtText, data1)
+		as.False(ownWrite)
+		ownWrite = c.ownWrite(clipboard.FmtFiles, data2)
+		as.True(ownWrite)
+		ownWrite = c.ownWrite(clipboard.FmtFiles, data2)
+		as.False(ownWrite)
 	})
 }
