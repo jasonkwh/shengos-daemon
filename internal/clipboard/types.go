@@ -13,7 +13,5 @@ type clipboardWatchFunc func(
 
 type clipboardWriteFunc func(
 	ctx context.Context,
-	format clipboard.Format,
-	data []byte,
 	opts ...clipboard.Option,
 ) (<-chan struct{}, error)

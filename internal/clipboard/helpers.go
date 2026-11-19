@@ -7,8 +7,39 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/jasonkwh/shengos-daemon/internal/message"
 	"golang.design/x/clipboard"
 )
+
+func (c *clboard) toMessageItems(
+	format message.ClipboardFormat,
+	data []byte,
+) ([]message.ClipboardItem, error) {
+	if format != message.ClipboardFormatFiles {
+		return []message.ClipboardItem{
+			{
+				Format: format,
+				Data:   data,
+			},
+		}, nil
+	}
+
+	uriList, err := toSFTPURIList(c.hostname, data, c.cfg.SSHUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return []message.ClipboardItem{
+		{
+			Format: message.ClipboardFormatFiles,
+			Data:   uriList,
+		},
+		{
+			Format: message.ClipboardFormatText,
+			Data:   data,
+		},
+	}, nil
+}
 
 func toSFTPURIList(
 	origin string,
@@ -49,18 +80,30 @@ func toSFTPURIList(
 
 func (c *clboard) writeRemembered(
 	ctx context.Context,
-	format clipboard.Format,
-	data []byte,
+	items []clipboard.Item,
 ) error {
-	c.remember(format, data)
-
-	if _, err := c.writeFunc(ctx, format, data); err != nil {
-		c.forget(format, data)
-
-		return err
+	if len(items) == 0 {
+		return ErrEmptyItems
 	}
 
-	return nil
+	opts := make([]clipboard.Option, len(items))
+	succeeded := false
+
+	for index, item := range items {
+		opts[index] = item
+		c.remember(item.Format, item.Bytes)
+
+		defer func() {
+			if !succeeded {
+				c.forget(item.Format, item.Bytes)
+			}
+		}()
+	}
+
+	_, err := c.writeFunc(ctx, opts...)
+	succeeded = err == nil
+
+	return err
 }
 
 func (c *clboard) remember(format clipboard.Format, data []byte) {

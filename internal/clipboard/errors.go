@@ -11,6 +11,7 @@ var (
 	ErrApplyFailed   = errors.New("apply failed")
 	ErrEmptyPathList = errors.New("empty path list")
 	ErrUnknownFormat = errors.New("unknown format")
+	ErrEmptyItems    = errors.New("empty items")
 )
 
 func errInitFailed(err error) error {

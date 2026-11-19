@@ -36,7 +36,7 @@ func New(
 		zl:        zap.NewNop(),
 		hostname:  hostname,
 		watchFunc: clipboard.Watch,
-		writeFunc: clipboard.Write,
+		writeFunc: clipboard.WriteAll,
 		written:   make(map[clipboard.Format][32]byte),
 	}
 
@@ -71,8 +71,7 @@ func (c *clboard) Watch(
 		}
 
 		c.zl.Debug("clipboard message published",
-			zap.String("origin", c.hostname),
-			zap.String("format", msg.Format.String()))
+			zap.String("origin", c.hostname))
 	}
 
 	c.zl.Debug("ended watching clipboard message")
@@ -85,8 +84,7 @@ func (c *clboard) Apply(
 	msg message.ClipboardMessage,
 ) error {
 	c.zl.Debug("applying clipboard message",
-		zap.String("origin", msg.Origin),
-		zap.String("format", msg.Format.String()))
+		zap.String("origin", msg.Origin))
 
 	if msg.Origin == c.hostname {
 		c.zl.Debug("clipboard message origin is the same as the hostname, skipping",
@@ -96,18 +94,32 @@ func (c *clboard) Apply(
 		return nil
 	}
 
-	format, err := toClipboardFormat(msg.Format)
-	if err != nil {
-		return errApplyFailed(err)
+	items := make([]clipboard.Item, 0, len(msg.Items))
+
+	for _, item := range msg.Items {
+		format, err := toClipboardFormat(item.Format)
+		if err != nil {
+			return errApplyFailed(err)
+		}
+
+		items = append(items, clipboard.Item{
+			Format: format,
+			Bytes:  item.Data,
+		})
 	}
 
-	if err := c.writeRemembered(ctx, format, msg.Data); err != nil {
+	if len(items) == 0 {
+		c.zl.Debug("clipboard message items is empty, skipping")
+
+		return errApplyFailed(ErrEmptyItems)
+	}
+
+	if err := c.writeRemembered(ctx, items); err != nil {
 		return errApplyFailed(err)
 	}
 
 	c.zl.Debug("clipboard message applied",
-		zap.String("origin", msg.Origin),
-		zap.String("format", msg.Format.String()))
+		zap.String("origin", msg.Origin))
 
 	return nil
 }
@@ -131,22 +143,17 @@ func (c *clboard) clipboardMessages(
 				continue
 			}
 
-			if msgFormat == message.ClipboardFormatFiles {
-				uriList, err := toSFTPURIList(c.hostname, data.Bytes, c.cfg.SSHUser)
-				if err != nil {
-					c.zl.Debug("failed to convert clipboard message to sftp uri list",
-						zap.Error(err))
+			items, err := c.toMessageItems(msgFormat, data.Bytes)
+			if err != nil {
+				c.zl.Debug("failed to convert clipboard message to message items",
+					zap.Error(err))
 
-					continue
-				}
-
-				data.Bytes = uriList
+				continue
 			}
 
 			if !yield(message.ClipboardMessage{
 				Origin: c.hostname,
-				Format: msgFormat,
-				Data:   data.Bytes,
+				Items:  items,
 			}) { //nolint:whitespace
 				return
 			}
