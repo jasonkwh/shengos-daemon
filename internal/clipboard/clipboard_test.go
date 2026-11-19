@@ -1,9 +1,9 @@
 package clipboard_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/go-openapi/testify/v2/assert"
@@ -28,8 +28,7 @@ func Test_clipboard_Watch(t *testing.T) {
 			data:   []byte("hello"),
 			want: &message.ClipboardMessage{
 				Origin: sampleHostname,
-				Format: message.ClipboardFormatText,
-				Data:   []byte("hello"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatText, Data: []byte("hello")}},
 			},
 		},
 		{
@@ -38,8 +37,7 @@ func Test_clipboard_Watch(t *testing.T) {
 			data:   []byte("image.png"),
 			want: &message.ClipboardMessage{
 				Origin: sampleHostname,
-				Format: message.ClipboardFormatImage,
-				Data:   []byte("image.png"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatImage, Data: []byte("image.png")}},
 			},
 		},
 		{
@@ -48,8 +46,10 @@ func Test_clipboard_Watch(t *testing.T) {
 			data:   []byte("file:///home/jasonkwh/test.txt"),
 			want: &message.ClipboardMessage{
 				Origin: sampleHostname,
-				Format: message.ClipboardFormatFiles,
-				Data:   []byte("sftp://jasonkwh@jasonkwh-test-rig/home/jasonkwh/test.txt\r\n"),
+				Items: []message.ClipboardItem{
+					{Format: message.ClipboardFormatFiles, Data: []byte("sftp://jasonkwh@jasonkwh-test-rig/home/jasonkwh/test.txt\r\n")},
+					{Format: message.ClipboardFormatText, Data: []byte("file:///home/jasonkwh/test.txt")},
+				},
 			},
 		},
 	}
@@ -76,8 +76,7 @@ func Test_clipboard_Watch(t *testing.T) {
 
 					return ok &&
 						got.Origin == tt.want.Origin &&
-						got.Format == tt.want.Format &&
-						bytes.Equal(got.Data, tt.want.Data)
+						reflect.DeepEqual(got.Items, tt.want.Items)
 				})).Return(nil)
 
 			as.NoError(clb.Watch(ctx, tm.mockDaemonBus.Publish))
@@ -99,16 +98,14 @@ func Test_clipboard_Apply(t *testing.T) {
 			name: "skipping own message",
 			msg: message.ClipboardMessage{
 				Origin: sampleHostname,
-				Format: message.ClipboardFormatText,
-				Data:   []byte("hello"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatText, Data: []byte("hello")}},
 			},
 		},
 		{
 			name: "unknown clipboard format 1",
 			msg: message.ClipboardMessage{
 				Origin: testOrigin,
-				Format: message.ClipboardFormatUnknown,
-				Data:   []byte("hello"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatUnknown, Data: []byte("hello")}},
 			},
 			wantErr: clboard.ErrUnknownFormat,
 		},
@@ -116,8 +113,7 @@ func Test_clipboard_Apply(t *testing.T) {
 			name: "unknown clipboard format 2",
 			msg: message.ClipboardMessage{
 				Origin: testOrigin,
-				Format: message.ClipboardFormatUnknown,
-				Data:   []byte("hello"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatUnknown, Data: []byte("hello")}},
 			},
 			wantErr: clboard.ErrApplyFailed,
 		},
@@ -125,8 +121,7 @@ func Test_clipboard_Apply(t *testing.T) {
 			name: "text",
 			msg: message.ClipboardMessage{
 				Origin: testOrigin,
-				Format: message.ClipboardFormatText,
-				Data:   []byte("hello"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatText, Data: []byte("hello")}},
 			},
 			wantFormat: clipboard.FmtText,
 			wantWrite:  true,
@@ -135,8 +130,7 @@ func Test_clipboard_Apply(t *testing.T) {
 			name: "image",
 			msg: message.ClipboardMessage{
 				Origin: testOrigin,
-				Format: message.ClipboardFormatImage,
-				Data:   []byte("image.png"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatImage, Data: []byte("image.png")}},
 			},
 			wantFormat: clipboard.FmtImage,
 			wantWrite:  true,
@@ -145,8 +139,7 @@ func Test_clipboard_Apply(t *testing.T) {
 			name: "files",
 			msg: message.ClipboardMessage{
 				Origin: testOrigin,
-				Format: message.ClipboardFormatFiles,
-				Data:   []byte("file:///home/jasonkwh/test.txt"),
+				Items:  []message.ClipboardItem{{Format: message.ClipboardFormatFiles, Data: []byte("file:///home/jasonkwh/test.txt")}},
 			},
 			wantFormat: clipboard.FmtFiles,
 			wantWrite:  true,
@@ -159,21 +152,17 @@ func Test_clipboard_Apply(t *testing.T) {
 			ctx := t.Context()
 
 			var (
-				gotFormat clipboard.Format
-				gotData   []byte
-				wrote     bool
+				gotOpts []clipboard.Option
+				calls   int
 			)
 
 			clb, _, err := newMockClipboard(t,
 				clboard.WithWriteFunc(func(
 					_ context.Context,
-					format clipboard.Format,
-					data []byte,
-					_ ...clipboard.Option,
+					opts ...clipboard.Option,
 				) (<-chan struct{}, error) {
-					wrote = true
-					gotFormat = format
-					gotData = data
+					calls++
+					gotOpts = opts
 
 					return nil, nil
 				}),
@@ -183,14 +172,47 @@ func Test_clipboard_Apply(t *testing.T) {
 
 			err = clb.Apply(ctx, tt.msg)
 			as.ErrorIs(err, tt.wantErr)
-			as.Equal(tt.wantWrite, wrote)
+			if tt.wantWrite {
+				as.Equal(1, calls)
+			} else {
+				as.Equal(0, calls)
+			}
 
 			if !tt.wantWrite {
 				return
 			}
 
-			as.Equal(tt.wantFormat, gotFormat)
-			as.Equal(tt.msg.Data, gotData)
+			as.Equal([]clipboard.Option{clipboard.Item{Format: tt.wantFormat, Bytes: tt.msg.Items[0].Data}}, gotOpts)
 		})
 	}
+}
+
+func Test_clipboard_Apply_multipleItems(t *testing.T) {
+	as := assert.New(t)
+	rs := require.New(t)
+	text := []byte("file:///home/jasonkwh/test.txt")
+	files := []byte("sftp://jasonkwh@jasonkwh-test-rig/home/jasonkwh/test.txt\r\n")
+	calls := 0
+
+	clb, _, err := newMockClipboard(t,
+		clboard.WithWriteFunc(func(_ context.Context, opts ...clipboard.Option) (<-chan struct{}, error) {
+			calls++
+			as.Equal([]clipboard.Option{
+				clipboard.Item{Format: clipboard.FmtFiles, Bytes: files},
+				clipboard.Item{Format: clipboard.FmtText, Bytes: text},
+			}, opts)
+
+			return nil, nil
+		}), clboard.WithSkipInit(true))
+	rs.NoError(err)
+
+	as.NoError(clb.Apply(t.Context(), message.ClipboardMessage{
+		Origin: sampleHostname + "-1",
+		Items: []message.ClipboardItem{
+			{Format: message.ClipboardFormatFiles, Data: files},
+			{Format: message.ClipboardFormatText, Data: text},
+		},
+	}))
+
+	as.Equal(1, calls)
 }

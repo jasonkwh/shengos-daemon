@@ -10,35 +10,75 @@ import (
 )
 
 func Test_clipboard_writeRemembered(t *testing.T) {
-	format := clipboard.FmtText
-	data := []byte("hello")
+	items := []clipboard.Item{
+		{Format: clipboard.FmtFiles, Bytes: []byte("sftp://jasonkwh@jasonkwh-test-rig/home/jasonkwh/test.txt")},
+		{Format: clipboard.FmtText, Bytes: []byte("file:///home/jasonkwh/test.txt")},
+	}
 
-	t.Run("stores the hash before write", func(t *testing.T) {
+	t.Run("stores all hashes before a single write and retains them on success", func(t *testing.T) {
 		as := assert.New(t)
 		c := &clboard{
 			written: make(map[clipboard.Format][32]byte),
 		}
-		c.writeFunc = func(context.Context, clipboard.Format, []byte, ...clipboard.Option) (<-chan struct{}, error) {
-			as.True(c.ownWrite(format, data))
+		calls := 0
+		c.writeFunc = func(_ context.Context, opts ...clipboard.Option) (<-chan struct{}, error) {
+			calls++
+			as.Equal([]clipboard.Option{items[0], items[1]}, opts)
+			for _, item := range items {
+				savedHash, ok := c.written[item.Format]
+				as.True(ok)
+				as.Equal(clipboardHash(item.Format, item.Bytes), savedHash)
+			}
 
 			return nil, nil
 		}
 
-		as.NoError(c.writeRemembered(t.Context(), format, data))
-		as.False(c.ownWrite(format, data))
+		as.NoError(c.writeRemembered(t.Context(), items))
+		as.Equal(1, calls)
+		for _, item := range items {
+			as.True(c.ownWrite(item.Format, item.Bytes))
+			as.False(c.ownWrite(item.Format, item.Bytes))
+		}
 	})
 
-	t.Run("clears the hash when write fails", func(t *testing.T) {
+	t.Run("clears all hashes before returning a write error", func(t *testing.T) {
 		as := assert.New(t)
+		writeErr := errors.New("write failed")
+		calls := 0
 		c := &clboard{
 			written: make(map[clipboard.Format][32]byte),
-			writeFunc: func(context.Context, clipboard.Format, []byte, ...clipboard.Option) (<-chan struct{}, error) {
-				return nil, errors.New("write failed")
+			writeFunc: func(_ context.Context, opts ...clipboard.Option) (<-chan struct{}, error) {
+				calls++
+				as.Equal([]clipboard.Option{items[0], items[1]}, opts)
+
+				return nil, writeErr
 			},
 		}
 
-		as.Error(c.writeRemembered(t.Context(), format, data))
-		as.False(c.ownWrite(format, data))
+		as.ErrorIs(c.writeRemembered(t.Context(), items), writeErr)
+		as.Equal(1, calls)
+		as.Empty(c.written)
+		for _, item := range items {
+			as.False(c.ownWrite(item.Format, item.Bytes))
+		}
+	})
+
+	t.Run("rejects empty items without writing", func(t *testing.T) {
+		as := assert.New(t)
+		calls := 0
+		c := &clboard{
+			written: make(map[clipboard.Format][32]byte),
+			writeFunc: func(context.Context, ...clipboard.Option) (<-chan struct{}, error) {
+				calls++
+
+				return nil, nil
+			},
+		}
+
+		as.ErrorIs(c.writeRemembered(t.Context(), nil), ErrEmptyItems)
+		as.ErrorIs(c.writeRemembered(t.Context(), []clipboard.Item{}), ErrEmptyItems)
+		as.Equal(0, calls)
+		as.Empty(c.written)
 	})
 }
 

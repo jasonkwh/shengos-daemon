@@ -108,12 +108,6 @@ func (c *clboard) Apply(
 		})
 	}
 
-	if len(items) == 0 {
-		c.zl.Debug("clipboard message items is empty, skipping")
-
-		return errApplyFailed(ErrEmptyItems)
-	}
-
 	if err := c.writeRemembered(ctx, items); err != nil {
 		return errApplyFailed(err)
 	}
