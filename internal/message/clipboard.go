@@ -22,14 +22,14 @@ var (
 	}
 )
 
-type ClipboardMessage struct {
-	Origin string
-	Items  []ClipboardItem
-}
-
 type ClipboardItem struct {
 	Format ClipboardFormat
 	Data   []byte
+}
+
+type ClipboardMessage struct {
+	Origin string
+	Items  []ClipboardItem
 }
 
 func (msg *ClipboardMessage) Payload() ([]byte, error) {
