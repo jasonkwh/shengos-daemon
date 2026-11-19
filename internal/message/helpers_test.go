@@ -17,10 +17,14 @@ func Test_message_serialize(t *testing.T) {
 			name: "ClipboardMessage",
 			msg: &ClipboardMessage{
 				Origin: "test",
-				Format: ClipboardFormatText,
-				Data:   []byte("test"),
+				Items: []ClipboardItem{
+					{
+						Format: ClipboardFormatText,
+						Data:   []byte("test"),
+					},
+				},
 			},
-			want: []byte("\x83\xa6Origin\xa4test\xa6Format\xcc\x01\xa4Data\xc4\x04test"),
+			want: []byte("\x82\xa6Origin\xa4test\xa5Items\x91\x82\xa6Format\xcc\x01\xa4Data\xc4\x04test"),
 		},
 	}
 	for _, tt := range tests {
@@ -42,11 +46,15 @@ func Test_message_deserialize(t *testing.T) {
 	}{
 		{
 			name: "ClipboardMessage",
-			data: []byte("\x83\xa6Origin\xa4test\xa6Format\xcc\x01\xa4Data\xc4\x04test"),
+			data: []byte("\x82\xa6Origin\xa4test\xa5Items\x91\x82\xa6Format\xcc\x01\xa4Data\xc4\x04test"),
 			want: &ClipboardMessage{
 				Origin: "test",
-				Format: ClipboardFormatText,
-				Data:   []byte("test"),
+				Items: []ClipboardItem{
+					{
+						Format: ClipboardFormatText,
+						Data:   []byte("test"),
+					},
+				},
 			},
 		},
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	clipboardVersion = 1
+	clipboardVersion = 2
 	clipboardRetain  = false
 )
 
@@ -24,6 +24,10 @@ var (
 
 type ClipboardMessage struct {
 	Origin string
+	Items  []ClipboardItem
+}
+
+type ClipboardItem struct {
 	Format ClipboardFormat
 	Data   []byte
 }
