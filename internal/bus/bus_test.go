@@ -29,8 +29,12 @@ func Test_daemonBus_Publish(t *testing.T) {
 
 	sampleMessage := &message.ClipboardMessage{
 		Origin: sampleHostname,
-		Format: message.ClipboardFormatText,
-		Data:   []byte("hello"),
+		Items: []message.ClipboardItem{
+			{
+				Format: message.ClipboardFormatText,
+				Data:   []byte("hello"),
+			},
+		},
 	}
 
 	sampleMessagePayload, err := sampleMessage.Payload()
