@@ -15,7 +15,7 @@
           pname = "shengos-daemon";
           version = builtins.elemAt (builtins.match "([^\n]*\n)*version: ([0-9]+\\.[0-9]+\\.[0-9]+)\n?" (builtins.readFile ./version.yaml)) 1;
           src = self;
-          vendorHash = "sha256-24nYj6Tmbul5xMXnBUTIJWU69rXNf9IGJCMiOkJ7T+M=";
+          vendorHash = "sha256-VY3XEXwTv94nfbNVs8Ji8QRToToLC8X+vFED44BJhTY=";
           subPackages = [ "." ];
           ldflags = [ "-s" "-w" ];
           meta = {
