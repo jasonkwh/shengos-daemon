@@ -17,10 +17,10 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/jasonkwh/envconfig v1.0.5 h1:KfaVSHz79r+CI8rMxwszh80tQWTSjsU/M4+PvVlGEMo=
-github.com/jasonkwh/envconfig v1.0.5/go.mod h1:H5b+V1ldKiYwSSjRXRaEMJaIOZxy6hWYrfsGg7YTOVA=
-github.com/jasonkwh/perf v1.0.1 h1:KoOzQBWpIe92hRzBzN/2fWWzc34AIH35ryyHZUUOluM=
-github.com/jasonkwh/perf v1.0.1/go.mod h1:QDJu5Qb1QuoGB3YeSzekXgppjxhhOTmxSrHI+5kHu3Y=
+github.com/jasonkwh/envconfig v1.0.6 h1:vRuQe5AWPiaMT1lBzpODuFo779gQe7utDl9VEKZVG5Q=
+github.com/jasonkwh/envconfig v1.0.6/go.mod h1:ucSt7UA6hJIwrfBDUg07sYH7LlBJbb3pageiRj+6XT4=
+github.com/jasonkwh/perf v1.0.2 h1:SYZKJhrIh/x9ufWIwr4yp0+6rxzi3gT2Bi9DebhDkXs=
+github.com/jasonkwh/perf v1.0.2/go.mod h1:f5xC5uUObpJqibdhzK3JTvy+p8mKV2Q9Uf99yYB/514=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
